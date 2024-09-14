@@ -1,7 +1,7 @@
-///////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 // Top Module of the CPU
 // Accepts data input from the bus, and an address output when the CPU is requesting memory access
-///////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 module CPU (
     input logic [31:0] memReadData,
@@ -91,7 +91,7 @@ module CPU (
     assign funct3 =     InstructionRegister[14:12];
     assign funct7 =     InstructionRegister[31:25];
 
-    // Set Load up the immediate type wires
+    // Set Load up the immediate type wires. I cant do it inside the always block, Icarus verilog doesnt like it.
     assign immIType =  {{20{InstructionRegister[31]}}, InstructionRegister[31:20]}; 
     assign immSType =  {{20{InstructionRegister[31]}}, InstructionRegister[31:25], InstructionRegister[11:7]};
     assign immBType =  {{19{InstructionRegister[31]}}, InstructionRegister[31], InstructionRegister[7], InstructionRegister[30:25], InstructionRegister[11:8], 1'b0};
