@@ -8,6 +8,7 @@ module RAM (
     input logic reset, clk
 );
     logic [3:0] MASKWREN1, MASKWREN2;
+    logic [31:0] readDataOut1, readDataOut2;
 
     always_comb begin
         case (byteMask)
@@ -23,29 +24,79 @@ module RAM (
                 MASKWREN1 = 4'b1111;
                 MASKWREN2 = 4'b1111;
             end
-            default: 
+            default: begin
+                MASKWREN1 = 4'b1111;
+                MASKWREN2 = 4'b1111;
+            end
         endcase
     end
 
+    // Select which of the rams to use
+    // If address is less than or equal to 14b’11111111111111, we can use the first ram, enable its Chipselect
+    // If address is greater than 14b’11111111111111, use the second ram, enable its Chipselect
+    // Also 
+    logic chipSelect1, chipSelect2;
+
+    always_comb begin
+        if (memAddress <= 14'b11111111111111) begin
+            chipSelect1 = 1'b1;
+            chipSelect2 = 1'b0;
+            memReadData = readDataOut1;
+        end else begin
+            chipSelect1 = 1'b0;
+            chipSelect2 = 1'b1;
+            memReadData = readDataOut2;
+        end
+    end
+
+    // First 2 SB_SPRAM256KA combined to make a 32 bit RAM
     // Upper 16 bit
-    SB_SPRAM256KA SPRAM1 (
-        .ADDRESS(memAddress),
-        .DATAIN(memWriteData),
+    SB_SPRAM256KA SPRAM00 (
+        .ADDRESS(memAddress[13:0]),
+        .DATAIN(memWriteData[31:16]),
         .MASKWREN(MASKWREN1),
         .WREN(memWrite),
-        .CHIPSELECT(1'b1),
+        .CHIPSELECT(chipSelect1),
         .CLOCK(clk),
-        .DATAOUT(memReadData)
+        .DATAOUT(readDataOut1[31:16])
     );
 
     // Lower 16 bit
-    SB_SPRAM256KA SPRAM1 (
-        .ADDRESS(memAddress),
-        .DATAIN(memWriteData),
+    SB_SPRAM256KA SPRAM01 (
+        .ADDRESS(memAddress[13:0]),
+        .DATAIN(memWriteData[15:0]),
         .MASKWREN(MASKWREN2),
         .WREN(memWrite),
-        .CHIPSELECT(1'b1),
+        .CHIPSELECT(chipSelect1),
         .CLOCK(clk),
-        .DATAOUT(memReadData)
+        .DATAOUT(readDataOut1[15:0])
     );
+
+    // Second 2 SB_SPRAM256KA combined to make a 32 bit RAM
+    // Adress for second ram is memAddress - 14'b11111111111111
+    logic [31:0] memAddress2;
+    always_comb begin
+        memAddress2 = memAddress - 14'b11111111111111;
+    end
+    SB_SPRAM256KA SPRAM10 (
+        .ADDRESS(memAddress2[13:0]),
+        .DATAIN(memWriteData[31:16]),
+        .MASKWREN(MASKWREN1),
+        .WREN(memWrite),
+        .CHIPSELECT(chipSelect2),
+        .CLOCK(clk),
+        .DATAOUT(readDataOut2[31:16])
+    );
+
+    // Lower 16 bit
+    SB_SPRAM256KA SPRAM11 (
+        .ADDRESS(memAddress2[13:0]),
+        .DATAIN(memWriteData[15:0]),
+        .MASKWREN(MASKWREN2),
+        .WREN(memWrite),
+        .CHIPSELECT(chipSelect2),
+        .CLOCK(clk),
+        .DATAOUT(readDataOut2[15:0])
+    );
+
 endmodule

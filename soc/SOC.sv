@@ -16,7 +16,26 @@ module SOC (
     );
     defparam clkclk.CLKHF_DIV = "0b11";
 
-    // Main memory Decoder
-    // 
+    // Instantiate RAM
+    RAM ram_inst (
+        .memAddress(memAddress),
+        .memWriteData(memWriteData),
+        .memWrite(memWrite),
+        .byteMask(byteMask),
+        .memReadData(memReadData),
+        .reset(reset),
+        .clk(clk)
+    );
+
+    // Instantiate CPU
+    CPU cpu_inst (
+        .memReadData(memReadData),
+        .memAddress(memAddress),
+        .memWriteData(memWriteData),
+        .byteMask(byteMask),
+        .memWrite(memWrite),
+        .reset(reset),
+        .clk(clk)
+    );
 
 endmodule

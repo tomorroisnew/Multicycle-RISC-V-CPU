@@ -51,7 +51,9 @@ module ControlUnit (
         // LUI
         LUI_WRITEBACK = 4'b1101,
         // AUIPC
-        AUIPC_EXECUTE = 4'b1110
+        AUIPC_EXECUTE = 4'b1110,
+        // Apparantely, memory read is sequential, so i need a state just to read from memory
+        MEMORY_WAIT = 4'b1111
     } state_t;
 
     state_t current_state, next_state;
@@ -67,7 +69,8 @@ module ControlUnit (
     // Next State Logic
     always_comb begin
         case (current_state)
-            FETCH:                          next_state = DECODE;
+            FETCH:                          next_state = MEMORY_WAIT;
+            MEMORY_WAIT:                    next_state = state_t'((opcode == 7'b0000011) ? LW_WRITEBACK : DECODE);
             DECODE: begin
                 case (opcode)
                     7'b0110011:             next_state = RTYPE_EXECUTION;
@@ -99,7 +102,7 @@ module ControlUnit (
                     default:                next_state = FETCH;
                 endcase
             end
-            LW_MEMORY_ACCESS:               next_state = LW_WRITEBACK;
+            LW_MEMORY_ACCESS:               next_state = MEMORY_WAIT;
             LW_WRITEBACK:                   next_state = FETCH;
             SW_MEMORY_ACCESS:               next_state = FETCH;
             // Immediate Flow
@@ -133,7 +136,6 @@ module ControlUnit (
                 // Update PC to point to the next address. PC + 4 by default
                 PCEnable = 1'b1;                     // Update PC
                 ResultSrc = 2'b10;                  // ALURESULT which is PC + 4 Can remove this since its default
-                InstructionRegisterEnable = 1'b1;   // Update Instruction Register
                 ALUSrcB = 2'b10;                       // Constant 4 for updating pc
             end
             DECODE: begin
@@ -221,6 +223,16 @@ module ControlUnit (
                 ALUSrcA = 2'b01;                    // OLD PC
                 ALUSrcB = 2'b01;                    // Immediate
                 ImmediateSrc = 3'b011;              // U-Type
+            end
+            // MEMORY_WAIT
+            MEMORY_WAIT: begin
+                // LW
+                if (opcode == 7'b0000011) begin
+                    InstructionOrData = 1'b1;           // Data. Not really needed i think.
+                end else begin
+                    InstructionOrData = 1'b0;           // Instruction
+                    InstructionRegisterEnable = 1'b1;   // Update Instruction Register
+                end
             end
         endcase
     end

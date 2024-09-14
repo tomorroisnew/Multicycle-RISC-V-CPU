@@ -71,7 +71,7 @@ module CPU_tb;
     end
 
     initial begin
-        $dumpfile("CPU_tb.vcd"); // Specify the name of the dump file
+        $dumpfile("CPU_tb2.vcd"); // Specify the name of the dump file
         $dumpvars(0, CPU_tb);    // Dump all variables in the testbench hierarchy
         $dumpvars(1, CPU_tb.uut.RegFile[0]);
         $dumpvars(1, CPU_tb.uut.RegFile[1]);
