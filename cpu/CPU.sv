@@ -8,6 +8,7 @@ module CPU (
     input logic clk,
     input logic reset,
     output logic [31:0] memAddress, memWriteData,
+    output logic [3:0] byteMask,
     output logic memWrite
 );
 
@@ -114,7 +115,6 @@ module CPU (
     assign RegFileDataB = RegFile[rs2];
 
     // Control Unit
-    // TODO Connect all the signals from different cycles. Its already organized
     ControlUnit controlUnit (
         .opcode(opcode),
         .funct3(funct3),
@@ -240,9 +240,17 @@ module CPU (
     assign memWrite = MemWrite;
     assign memWriteData = REGB; // Output of the RegB Register
 
-    // TODO 
-    // BYTE SELECT FOR LB and LW and SW and SB
-
+    // BYTE SELECT FOR LB and LW and SW and SB, generate a byte 4 bit mask to mask each bit of the data depending on instruction
+    always_comb begin
+        case (funct3)
+            3'b000: byteMask = 4'b0001; // LB/SB
+            3'b001: byteMask = 4'b0011; // LH/SH
+            3'b010: byteMask = 4'b1111; // LW/SW
+            3'b100: byteMask = 4'b0001; // LBU
+            3'b101: byteMask = 4'b0011; // LHU
+            default: byteMask = 4'b0000;
+        endcase
+    end
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////// WriteBack ////////////////////////////////////////////////////////////
