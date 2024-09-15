@@ -70,7 +70,8 @@ module ControlUnit (
     always_comb begin
         case (current_state)
             FETCH:                          next_state = MEMORY_WAIT;
-            MEMORY_WAIT:                    next_state = state_t'((opcode == 7'b0000011) ? LW_WRITEBACK : DECODE);
+            //MEMORY_WAIT:                    next_state = state_t'((opcode == 7'b0000011) ? LW_WRITEBACK : DECODE); // For simulation
+            MEMORY_WAIT:                    next_state = (opcode == 7'b0000011) ? LW_WRITEBACK : DECODE; // For synthesizing
             DECODE: begin
                 case (opcode)
                     7'b0110011:             next_state = RTYPE_EXECUTION;

@@ -111,8 +111,8 @@ module CPU (
     end
 
     // Combinational logic and wiring connections
-    assign RegFileDataA = RegFile[rs1];
-    assign RegFileDataB = RegFile[rs2];
+    assign RegFileDataA = (rs1 == 5'b0) ? 32'b0 : RegFile[rs1];
+    assign RegFileDataB = (rs2 == 5'b0) ? 32'b0 : RegFile[rs2];
 
     // Control Unit
     ControlUnit controlUnit (
@@ -213,12 +213,15 @@ module CPU (
     logic [31:0] Result; // The multiplexer for choosing which data to choose. Either ALUOUT, ALuResult, or DataFromMem?
     logic [31:0] ToAddress;
 
+    // Wire to the memory data register, here's where we do our extensions first
+    logic [31:0] ToMemoryDataRegister;
+
     // Update the registers
     always_ff @( posedge clk or posedge reset ) begin
         if (reset) begin
             MemoryDataRegister <= 32'b0;
         end else begin
-            MemoryDataRegister <= memReadData;
+            MemoryDataRegister <= ToMemoryDataRegister;
         end
     end
 
@@ -249,6 +252,23 @@ module CPU (
             3'b100: byteMask = 4'b0001; // LBU
             3'b101: byteMask = 4'b0011; // LHU
             default: byteMask = 4'b0000;
+        endcase
+    end
+
+    // Reimplement the byte select, could use a refactor, but for reading, we should do some extensions either as signed or unsigned
+    logic [31:0] LBData, LHData, LBUData, LHUData; // icarus doesnt like this inside the always comb
+    assign LBData = {{24{memReadData[7]}}, memReadData[7:0]};
+    assign LHData = {{16{memReadData[15]}}, memReadData[15:0]};
+    assign LBUData = {24'b0, memReadData[7:0]};
+    assign LHUData = {16'b0, memReadData[15:0]};
+    always_comb begin
+        case (funct3)
+            3'b000: ToMemoryDataRegister = LBData; // LB/SB
+            3'b001: ToMemoryDataRegister = LHData; // LH/SH
+            3'b010: ToMemoryDataRegister = memReadData; // LW/SW
+            3'b100: ToMemoryDataRegister = LBUData; // LBU
+            3'b101: ToMemoryDataRegister = LHUData; // LHU
+            default: ToMemoryDataRegister = memReadData;
         endcase
     end
 

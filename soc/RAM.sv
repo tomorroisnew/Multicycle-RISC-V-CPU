@@ -34,7 +34,7 @@ module RAM (
     // Select which of the rams to use
     // If address is less than or equal to 14b’11111111111111, we can use the first ram, enable its Chipselect
     // If address is greater than 14b’11111111111111, use the second ram, enable its Chipselect
-    // Also 
+    // Total of 268435456 addressable, 32 bits each locations or 1024 MB
     logic chipSelect1, chipSelect2;
 
     always_comb begin

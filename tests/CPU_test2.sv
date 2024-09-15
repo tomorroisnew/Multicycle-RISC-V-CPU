@@ -1,111 +1,87 @@
-module CPU_tb;
+module CPU_Load_Testbench;
 
-    // Testbench signals
-    logic [31:0] memReadData;
-    logic clk;
-    logic reset;
-    logic [31:0] memAddress, memWriteData;
+    // Signals for CPU and memory
+    logic clk, reset;
+    logic [31:0] memAddress, memWriteData, memReadData;
+    logic [3:0] byteMask;
     logic memWrite;
 
-    // Simple memory model
-    logic [31:0] memory [0:255];
-
-    // Instantiate the CPU
+    // Declare control signals for CPU operation
+    logic PCEnable, InstructionRegisterEnable, ImmediateSrc;
+    
+    // Instantiate CPU and connect signals
     CPU uut (
         .memReadData(memReadData),
         .clk(clk),
         .reset(reset),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
+        .byteMask(byteMask),
         .memWrite(memWrite)
     );
 
+    // Instantiate BRAM_MMIO for memory access simulation
+    BRAM_MMIO #(
+        .BASE_MEMORY(32'h0000_0000),
+        .TOP_MEMORY(32'h0000_01ff)
+    ) memory (
+        .clk(clk),
+        .memAddress(memAddress),
+        .memWriteData(memWriteData),
+        .memWrite(memWrite),
+        .byteMask(byteMask),
+        .memReadData(memReadData)
+    );
+
     // Clock generation
+    always #5 clk = ~clk;
+
+    // Testbench flow control
     initial begin
+        // Initialize signals
         clk = 0;
-        forever #5 clk = ~clk; // 10ns period clock
-    end
-
-    // Reset generation
-    initial begin
         reset = 1;
-        #15 reset = 0; // Release reset after 15ns
+        PCEnable = 0;
+        InstructionRegisterEnable = 0;
+        ImmediateSrc = 0;
+        memWrite = 0;
+        memAddress = 0;
+        memWriteData = 0;
+        byteMask = 4'b0000;
+
+        // Release reset after a short delay
+        #10 reset = 0;
+
+        // Test 1: Load Word (LW)
+        $display("Test 1: LW");
+        @(posedge clk);
+        memWrite = 1;
+        memAddress = 32'h0000_0004;
+        memWriteData = 32'hDEADBEEF;  // Write to memory
+        byteMask = 4'b1111;  // Write 4 bytes
+        @(posedge clk);
+        memWrite = 0;
+
+        // Simulate the LW instruction
+        uut.PCEnable = 1;
+        uut.InstructionRegisterEnable = 1;
+        uut.ImmediateSrc = 0;  // I-Type
+
+        // Manually set LW instruction (opcode for LW is 0000011)
+        uut.InstructionRegister = {7'b0000011, 5'd0, 3'b010, 5'd0, 5'd1, 7'b0000000}; // LW instruction
+
+        @(posedge clk);
+        if (uut.RegFile[1] !== 32'hDEADBEEF) begin
+            $display("Test 1 Failed: Expected DEADBEEF, got %h", uut.RegFile[1]);
+        end else begin
+            $display("Test 1 Passed");
+        end
+
+        // Continue with other test cases...
+        // Add more tests for LH, LB, LBU, etc.
+
+        // End simulation
+        $stop;
     end
-
-    // Initialize memory with instructions
-    initial begin
-        // Example instructions
-        memory[0] = 32'h00a58513; // addi x10, x11, 10
-        memory[1] = 32'h00a58593; // addi x11, x11, 10
-        memory[2] = 32'h00a58633; // add x12, x11, x10
-        memory[3] = 32'h07802683; // lw x13, 120(x0)
-        memory[4] = 32'h06d02c23; // sw x13, 120(x0)
-        memory[5] = 32'hfec5c8e3; // blt x11, x12, -16
-
-        // Some data in memory
-        memory[30] = 32'hffffffff; // ADDI x1, x0, 0
-        // Add more instructions as needed
-    end
-
-    // Memory read logic
-    always_comb begin
-        memReadData = memory[memAddress>>2];
-    end
-
-    // Test sequence
-    initial begin
-        // Wait for reset deassertion
-        @(negedge reset);
-
-        // Run the CPU for a certain number of cycles
-        repeat (100) @(posedge clk);
-
-        // Finish simulation
-        $display("Simulation finished.");
-        $finish;
-    end
-
-    // Monitor outputs
-    initial begin
-        $monitor("Time=%0t | memAddress=%h | memWriteData=%h | memWrite=%b", $time, memAddress, memWriteData, memWrite);
-    end
-
-    initial begin
-        $dumpfile("CPU_tb2.vcd"); // Specify the name of the dump file
-        $dumpvars(0, CPU_tb);    // Dump all variables in the testbench hierarchy
-        $dumpvars(1, CPU_tb.uut.RegFile[0]);
-        $dumpvars(1, CPU_tb.uut.RegFile[1]);
-        $dumpvars(1, CPU_tb.uut.RegFile[2]);
-        $dumpvars(1, CPU_tb.uut.RegFile[3]);
-        $dumpvars(1, CPU_tb.uut.RegFile[4]);
-        $dumpvars(1, CPU_tb.uut.RegFile[5]);
-        $dumpvars(1, CPU_tb.uut.RegFile[6]);
-        $dumpvars(1, CPU_tb.uut.RegFile[7]);
-        $dumpvars(1, CPU_tb.uut.RegFile[8]);
-        $dumpvars(1, CPU_tb.uut.RegFile[9]);
-        $dumpvars(1, CPU_tb.uut.RegFile[10]);
-        $dumpvars(1, CPU_tb.uut.RegFile[11]);
-        $dumpvars(1, CPU_tb.uut.RegFile[12]);
-        $dumpvars(1, CPU_tb.uut.RegFile[13]);
-        $dumpvars(1, CPU_tb.uut.RegFile[14]);
-        $dumpvars(1, CPU_tb.uut.RegFile[15]);
-        $dumpvars(1, CPU_tb.uut.RegFile[16]);
-        $dumpvars(1, CPU_tb.uut.RegFile[17]);
-        $dumpvars(1, CPU_tb.uut.RegFile[18]);
-        $dumpvars(1, CPU_tb.uut.RegFile[19]);
-        $dumpvars(1, CPU_tb.uut.RegFile[20]);
-        $dumpvars(1, CPU_tb.uut.RegFile[21]);
-        $dumpvars(1, CPU_tb.uut.RegFile[22]);
-        $dumpvars(1, CPU_tb.uut.RegFile[23]);
-        $dumpvars(1, CPU_tb.uut.RegFile[24]);
-        $dumpvars(1, CPU_tb.uut.RegFile[25]);
-        $dumpvars(1, CPU_tb.uut.RegFile[26]);
-        $dumpvars(1, CPU_tb.uut.RegFile[27]);
-        $dumpvars(1, CPU_tb.uut.RegFile[28]);
-        $dumpvars(1, CPU_tb.uut.RegFile[29]);
-        $dumpvars(1, CPU_tb.uut.RegFile[30]);
-        $dumpvars(1, CPU_tb.uut.RegFile[31]);
-    end
-
 
 endmodule
