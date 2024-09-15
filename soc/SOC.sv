@@ -29,7 +29,7 @@ module SOC (
     //);
 
     // Instantiate CPU
-    CPU cpu_inst (
+    CPU cpu (
         .memReadData(memReadData),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
@@ -60,6 +60,8 @@ module SOC (
     );
 
     // Multiplexer for memReadData
+    // Outputs of the mmio modules
+    logic [31:0] bramReadData, gpioReadData;
     always_comb begin
         if (memAddress >= 32'h0000_0000 && memAddress <= 32'h0000_01FF) begin
             memReadData = bramReadData;

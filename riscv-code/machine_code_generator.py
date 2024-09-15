@@ -25,8 +25,23 @@ def main():
     machine_code_hex = [
         "fffff537", # lui   x10, 0xFFFFF
         "ff056513", # ori   x10, x10, 0xFF0
-        "0ff00593", # addi x11, x0, 255
+        "00000593", # addi x11, x0, 0
+        #"0ff00593", # addi x11, x0, 255
         "00b52023", # sw    x11, 0(x10)
+        "00000013", # addi x0, x0, 0 NOP
+        "00000013", # addi x0, x0, 0 NOP
+        "00000013", # addi x0, x0, 0 NOP
+        "00000013", # addi x0, x0, 0 NOP
+        "fffff537", # lui   x10, 0xFFFFF
+        "ff056513", # ori   x10, x10, 0xFF0
+        "00000593", # addi x11, x0, 0
+        #"0ff00593", # addi x11, x0, 255
+        "00b52023", # sw    x11, 0(x10)
+        "00000013", # addi x0, x0, 0 NOP
+        "00000013", # addi x0, x0, 0 NOP
+        "00000013", # addi x0, x0, 0 NOP
+        "00000013", # addi x0, x0, 0 NOP
+        "fc1ff06f", # jal x0, -64
     ]
     for code in machine_code_hex:
         byte1, byte2, byte3, byte4 = split_machine_code(code)
