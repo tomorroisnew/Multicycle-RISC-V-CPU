@@ -2,7 +2,7 @@ module BRAM_MMIO_tb();
 
     // Parameters
     parameter logic [31:0] BASE_MEMORY = 32'h0000_0000;
-    parameter logic [31:0] TOP_MEMORY  = 32'h0000_01ff; // 512 bytes
+    parameter logic [31:0] TOP_MEMORY  = 32'h0000_0810; // 512 bytes
     
     // Inputs
     logic clk;
@@ -93,6 +93,27 @@ module BRAM_MMIO_tb();
 
         // Test 6: Read back the word from address 0x0000_0008
         memAddress = 32'h0000_0008;
+        #10; // Wait for the read data to be captured
+        $display("Test 6 - Read Data: %h (Expected: AABBCCDD)", memReadData);
+
+        // Test 4: Read back the word from address 0x0000_0004
+        memAddress = 32'h0000_0004;
+        #10; // Wait for the read data to be captured
+        $display("Test 4 - Read Data: %h (Expected: 000000FF)", memReadData);
+
+        // Test 5: Write to all bytes of address 0x0000_0008
+        memAddress = 32'h0000_07CC;
+        memWriteData = 32'hAABBCCDD;
+        byteMask = 4'b1111;
+        memWrite = 1;
+        #10;
+        memWrite = 0;
+        
+        // Wait one clock cycle for the write to propagate
+        #10;
+
+        // Test 6: Read back the word from address 0x0000_0008
+        memAddress = 32'h0000_0804;
         #10; // Wait for the read data to be captured
         $display("Test 6 - Read Data: %h (Expected: AABBCCDD)", memReadData);
 

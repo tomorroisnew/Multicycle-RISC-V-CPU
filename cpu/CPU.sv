@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 module CPU (
-    input logic [31:0] memReadData,
+    input logic [31:0] TomemReadData,
     input logic clk,
     input logic reset,
     output logic [31:0] memAddress, memWriteData,
@@ -21,6 +21,10 @@ module CPU (
     // The registers.
     logic [31:0] PC, InstructionRegister, OLDPC;
 
+    // Wire to contain the reversed memread data
+    logic [31:0] memReadData;
+    assign memReadData = {TomemReadData[7:0], TomemReadData[15:8], TomemReadData[23:16], TomemReadData[31:24]};
+
     // Update the registers
     always_ff @( posedge clk or posedge reset ) begin
         if (reset) begin
@@ -32,7 +36,9 @@ module CPU (
             end
             if (InstructionRegisterEnable) begin
                 InstructionRegister <= memReadData;
-                OLDPC               <= PC;
+            end
+            if (OLDPCEnable) begin
+                OLDPC <= PC;
             end
         end
     end
@@ -126,6 +132,7 @@ module CPU (
         .PCEnable(PCEnable), 
         .InstructionRegisterEnable(InstructionRegisterEnable), 
         .InstructionOrData(InstructionOrData),
+        .OLDPCEnable(OLDPCEnable),
         // Decode 
         .ImmediateSrc(ImmediateSrc),
         .REGAEnable(REGAEnable), 
@@ -241,16 +248,18 @@ module CPU (
 
     // Wire them to the io of the cpu module. MemAddress is already wired in Fetch
     assign memWrite = MemWrite;
-    assign memWriteData = REGB; // Output of the RegB Register
+    logic [31:0] TomemWriteData;
+    assign TomemWriteData  = {REGB[7:0], REGB[15:8], REGB[23:16], REGB[31:24]}; // Reverse the data to be written to memory
+    assign memWriteData = TomemWriteData; // Output of the RegB Register
 
     // BYTE SELECT FOR LB and LW and SW and SB, generate a byte 4 bit mask to mask each bit of the data depending on instruction
     always_comb begin
         case (funct3)
-            3'b000: byteMask = 4'b0001; // LB/SB
-            3'b001: byteMask = 4'b0011; // LH/SH
+            3'b000: byteMask = 4'b1000; // LB/SB
+            3'b001: byteMask = 4'b1100; // LH/SH
             3'b010: byteMask = 4'b1111; // LW/SW
-            3'b100: byteMask = 4'b0001; // LBU
-            3'b101: byteMask = 4'b0011; // LHU
+            3'b100: byteMask = 4'b1000; // LBU
+            3'b101: byteMask = 4'b1100; // LHU
             default: byteMask = 4'b0000;
         endcase
     end

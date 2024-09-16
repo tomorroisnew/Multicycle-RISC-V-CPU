@@ -5,7 +5,7 @@ module ControlUnit (
     input logic Zero,
     input logic clk, reset,
     // Fetch
-    output logic PCEnable, InstructionRegisterEnable, InstructionOrData,
+    output logic PCEnable, InstructionRegisterEnable, InstructionOrData, OLDPCEnable,
     // Decode 
     output logic [2:0] ImmediateSrc,
     output logic REGAEnable, REGBEnable,
@@ -29,31 +29,33 @@ module ControlUnit (
     );
 
     // State machine. Control all the signals and ALUOp base on state. Implement all needed states.
-    typedef enum logic [3:0] {
-        FETCH = 4'b0000,
-        DECODE = 4'b0001,
+    typedef enum logic [4:0] {
+        FETCH = 5'b00000,
+        DECODE = 5'b00001,
         // RTYPE Flow
-        RTYPE_EXECUTION = 4'b0010,
-        ALU_WRITEBACK = 4'b0011,
+        RTYPE_EXECUTION = 5'b00010,
+        ALU_WRITEBACK = 5'b00011,
         // JAL/JARL
-        JAL_EXECUTION = 4'b0100,
-        JALR_EXECUTION = 4'b1011, // Added late so order is not correct
-        JALR_EXECUTION2 = 4'b1100, // Added late so order is not correct
+        JAL_EXECUTION = 5'b00100,
+        JALR_EXECUTION = 5'b01011, // Added late so order is not correct
+        JALR_EXECUTION2 = 5'b01100, // Added late so order is not correct
         // BEQ Flow
-        BRANCH_COMPLETION = 4'b0101,
+        BRANCH_COMPLETION = 5'b00101,
         // LW/SW Flow
-        MEMORY_ADDRESS_COMPUTATION = 4'b0110,
-        LW_MEMORY_ACCESS = 4'b0111,
-        LW_WRITEBACK = 4'b1000,
-        SW_MEMORY_ACCESS = 4'b1001,
+        MEMORY_ADDRESS_COMPUTATION = 5'b00110,
+        LW_MEMORY_ACCESS = 5'b00111,
+        LW_WRITEBACK = 5'b01000,
+        SW_MEMORY_ACCESS = 5'b01001,
         // Immediate Flow
-        IMMEDIATE_EXECUTION = 4'b1010,
+        IMMEDIATE_EXECUTION = 5'b01010,
         // LUI
-        LUI_WRITEBACK = 4'b1101,
+        LUI_WRITEBACK = 5'b01101,
         // AUIPC
-        AUIPC_EXECUTE = 4'b1110,
+        AUIPC_EXECUTE = 5'b01110,
         // Apparantely, memory read is sequential, so i need a state just to read from memory
-        MEMORY_WAIT = 4'b1111
+        MEMORY_FETCH_WAIT = 5'b01111,
+        // SW/LW
+        MEMORY_LW_WAIT = 5'b10000
     } state_t;
 
     state_t current_state, next_state;
@@ -69,9 +71,9 @@ module ControlUnit (
     // Next State Logic
     always_comb begin
         case (current_state)
-            FETCH:                          next_state = MEMORY_WAIT;
-            //MEMORY_WAIT:                    next_state = state_t'((opcode == 7'b0000011) ? LW_WRITEBACK : DECODE); // For simulation
-            MEMORY_WAIT:                    next_state = (opcode == 7'b0000011) ? LW_WRITEBACK : DECODE; // For synthesizing
+            FETCH:                          next_state = MEMORY_FETCH_WAIT;
+            MEMORY_FETCH_WAIT:                next_state = DECODE; // For simulation
+            //MEMORY_WAIT:                    next_state = (opcode == 7'b0000011) ? LW_WRITEBACK : DECODE; // For synthesizing
             DECODE: begin
                 case (opcode)
                     7'b0110011:             next_state = RTYPE_EXECUTION;
@@ -103,7 +105,8 @@ module ControlUnit (
                     default:                next_state = FETCH;
                 endcase
             end
-            LW_MEMORY_ACCESS:               next_state = MEMORY_WAIT;
+            LW_MEMORY_ACCESS:               next_state = MEMORY_LW_WAIT;
+            MEMORY_LW_WAIT:                next_state = LW_WRITEBACK;
             LW_WRITEBACK:                   next_state = FETCH;
             SW_MEMORY_ACCESS:               next_state = FETCH;
             // Immediate Flow
@@ -131,11 +134,16 @@ module ControlUnit (
         MemWrite = 1'b0;                    // Memory Write
         RegWrite = 1'b0;                    // Register File Write
         ALUOp = 2'b00;                      // ALU Operation
+        OLDPCEnable = 1'b0;
 
         case (current_state)
             FETCH: begin
                 // Update PC to point to the next address. PC + 4 by default
-                PCEnable = 1'b1;                     // Update PC
+                // We can rewrite this later to just skip the fetch, and go to decode MEM_WAIT immediately when jumped
+                if (opcode != 7'b1101111 && opcode != 7'b1100111 && opcode != 7'b1100011) begin
+                    PCEnable = 1'b1;                     // Update PC
+                    OLDPCEnable = 1'b1;                 // Update OLD PC
+                end
                 ResultSrc = 2'b10;                  // ALURESULT which is PC + 4 Can remove this since its default
                 ALUSrcB = 2'b10;                       // Constant 4 for updating pc
             end
@@ -162,11 +170,13 @@ module ControlUnit (
                 PCEnable = 1'b1;                    // Update PC
                 ALUSrcA = 2'b01;                    // OLD PC
                 ALUSrcB = 2'b10;                    // 4
+                //OLDPCEnable = 1'b1;                 // Update OLD PC
             end
             // JALR
             JALR_EXECUTION: begin
                 // Do the PC Update First. Then calculate the rd = PC + 4 next cycle
                 PCEnable = 1'b1;                    // Update PC
+                //OLDPCEnable = 1'b1;                 // Update OLD PC
                 ALUSrcA = 2'b10;                    // REGA
                 ALUSrcB = 2'b01;                    // Immediate
                 ResultSrc = 2'b10;                  // ALURESULT
@@ -189,6 +199,7 @@ module ControlUnit (
                     3'b111: PCEnable = Zero ? 1'b0 : 1'b1; // BGEU
                     default: PCEnable = 1'b0;
                 endcase
+                //OLDPCEnable = PCEnable;                 // Update OLD PC
             end
             // LW/SW
             MEMORY_ADDRESS_COMPUTATION: begin
@@ -226,14 +237,15 @@ module ControlUnit (
                 ImmediateSrc = 3'b011;              // U-Type
             end
             // MEMORY_WAIT
-            MEMORY_WAIT: begin
+            MEMORY_FETCH_WAIT: begin
                 // LW
-                if (opcode == 7'b0000011) begin
-                    InstructionOrData = 1'b1;           // Data. Not really needed i think.
-                end else begin
-                    InstructionOrData = 1'b0;           // Instruction
-                    InstructionRegisterEnable = 1'b1;   // Update Instruction Register
-                end
+                InstructionOrData = 1'b0;           // Instruction
+                InstructionRegisterEnable = 1'b1;   // Update Instruction Register
+            end
+            // MEMORY_WAIT
+            MEMORY_LW_WAIT: begin
+                // LW
+                InstructionOrData = 1'b1;           
             end
         endcase
     end

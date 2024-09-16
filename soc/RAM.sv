@@ -1,5 +1,8 @@
 // Combine SB_SPRAM256KA to make a 32 bit ram 
-module RAM (
+module RAM #(
+    parameter logic [31:0] BASE_MEMORY = 32'h0000_0800,
+    parameter logic [31:0] TOP_MEMORY  = 32'h0000_07ff // 2048 bytes
+) (
     input logic [31:0] memAddress,
     input logic [31:0] memWriteData,
     input logic memWrite,
@@ -38,7 +41,7 @@ module RAM (
     logic chipSelect1, chipSelect2;
 
     always_comb begin
-        if (memAddress <= 14'b11111111111111) begin
+        if (baseAddress <= 14'b11111111111111) begin
             chipSelect1 = 1'b1;
             chipSelect2 = 1'b0;
             memReadData = readDataOut1;
@@ -52,7 +55,7 @@ module RAM (
     // First 2 SB_SPRAM256KA combined to make a 32 bit RAM
     // Upper 16 bit
     SB_SPRAM256KA SPRAM00 (
-        .ADDRESS(memAddress[13:0]),
+        .ADDRESS(baseAddress[13:0]),
         .DATAIN(memWriteData[31:16]),
         .MASKWREN(MASKWREN1),
         .WREN(memWrite),
@@ -63,7 +66,7 @@ module RAM (
 
     // Lower 16 bit
     SB_SPRAM256KA SPRAM01 (
-        .ADDRESS(memAddress[13:0]),
+        .ADDRESS(baseAddress[13:0]),
         .DATAIN(memWriteData[15:0]),
         .MASKWREN(MASKWREN2),
         .WREN(memWrite),
@@ -73,13 +76,13 @@ module RAM (
     );
 
     // Second 2 SB_SPRAM256KA combined to make a 32 bit RAM
-    // Adress for second ram is memAddress - 14'b11111111111111
-    logic [31:0] memAddress2;
+    // Adress for second ram is baseAddress - 14'b11111111111111
+    logic [31:0] baseAddress2;
     always_comb begin
-        memAddress2 = memAddress - 14'b11111111111111;
+        baseAddress2 = baseAddress - 14'b11111111111111;
     end
     SB_SPRAM256KA SPRAM10 (
-        .ADDRESS(memAddress2[13:0]),
+        .ADDRESS(baseAddress2[13:0]),
         .DATAIN(memWriteData[31:16]),
         .MASKWREN(MASKWREN1),
         .WREN(memWrite),
@@ -90,7 +93,7 @@ module RAM (
 
     // Lower 16 bit
     SB_SPRAM256KA SPRAM11 (
-        .ADDRESS(memAddress2[13:0]),
+        .ADDRESS(baseAddress2[13:0]),
         .DATAIN(memWriteData[15:0]),
         .MASKWREN(MASKWREN2),
         .WREN(memWrite),

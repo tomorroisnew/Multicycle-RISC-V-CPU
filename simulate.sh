@@ -1,3 +1,6 @@
-rm tests/CPU_testbench
-iverilog -g2012 tests/CPU_test.sv cpu/CPU.sv cpu/ControlUnit.sv cpu/ALU.sv soc/RAM.sv tests/cells_sim.v -o tests/CPU_testbench
-./tests/CPU_testbench
+export PATH="$PATH:/mnt/storage/nas/design/riscvtoolchain/bin"
+cd riscv-code
+./generate_files.sh
+cd ../
+iverilog -g2012 tests/SOC_test.sv cpu/CPU.sv soc/BRAM_MMIO.sv cpu/ControlUnit.sv cpu/ALU.sv soc/GPIO_MMIO.sv -o tests/a.out
+./tests/a.out
