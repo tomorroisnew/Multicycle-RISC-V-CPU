@@ -142,7 +142,7 @@ module ControlUnit (
                 // We can rewrite this later to just skip the fetch, and go to decode MEM_WAIT immediately when jumped
                 if (opcode != 7'b1101111 && opcode != 7'b1100111 && opcode != 7'b1100011) begin
                     PCEnable = 1'b1;                     // Update PC
-                    OLDPCEnable = 1'b1;                 // Update OLD PC
+                    //OLDPCEnable = 1'b1;                 // Update OLD PC
                 end
                 ResultSrc = 2'b10;                  // ALURESULT which is PC + 4 Can remove this since its default
                 ALUSrcB = 2'b10;                       // Constant 4 for updating pc
@@ -241,6 +241,7 @@ module ControlUnit (
                 // LW
                 InstructionOrData = 1'b0;           // Instruction
                 InstructionRegisterEnable = 1'b1;   // Update Instruction Register
+                OLDPCEnable = 1'b1;                 // Update OLD PC
             end
             // MEMORY_WAIT
             MEMORY_LW_WAIT: begin
