@@ -36,7 +36,7 @@ module test_SOC;
     // Clock generation
     initial begin
         clk = 0;
-        repeat (5000) begin
+        forever begin
             #5 clk = ~clk;  // Generate clock signal with period 10 time units
         end
     end
@@ -51,7 +51,7 @@ module test_SOC;
     // Monitor outputs
     initial begin
         $monitor("At time %t, reset = %0b, ledr_n = %0b, ledg_n = %0b", $time, reset, ledr_n, ledg_n);
-        $monitor("At time %t, reset = %0b, ledr_n = %0b, ledg_n = %0b, PC = %h, Instruction = %h", $time, reset, ledr_n, ledg_n, cpu.PC, cpu.InstructionRegister);
+        //$monitor("At time %t, ledr_n = %0b, ledg_n = %0b, Instruction = %h", $time, ledr_n, ledg_n, cpu.InstructionRegister);
     end
 
     // Waveform dump

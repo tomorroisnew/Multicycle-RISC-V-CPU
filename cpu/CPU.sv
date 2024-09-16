@@ -29,6 +29,7 @@ module CPU (
     always_ff @( posedge clk or posedge reset ) begin
         if (reset) begin
             PC <= 32'b0;
+            OLDPC <= 32'b0;
             InstructionRegister <= 32'b0;
         end else begin
             if (PCEnable) begin

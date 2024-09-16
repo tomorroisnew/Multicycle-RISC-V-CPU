@@ -11,4 +11,4 @@ set_io ledr_n     11
 set_io ledg_n     37
 
 # Buttons
-set_io reset 20
+set_io reset 10

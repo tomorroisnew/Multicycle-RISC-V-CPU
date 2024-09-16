@@ -37,6 +37,7 @@ module ControlUnit (
         ALU_WRITEBACK = 5'b00011,
         // JAL/JARL
         JAL_EXECUTION = 5'b00100,
+        JAL_EXECUTION2 = 5'b10001,
         JALR_EXECUTION = 5'b01011, // Added late so order is not correct
         JALR_EXECUTION2 = 5'b01100, // Added late so order is not correct
         // BEQ Flow
@@ -92,7 +93,8 @@ module ControlUnit (
             RTYPE_EXECUTION:                next_state = ALU_WRITEBACK;
             ALU_WRITEBACK:                  next_state = FETCH;
             // JAL/JALR Flow
-            JAL_EXECUTION:                next_state = ALU_WRITEBACK;
+            JAL_EXECUTION:                next_state = JAL_EXECUTION2;
+            JAL_EXECUTION2:                next_state = ALU_WRITEBACK;
             JALR_EXECUTION:                next_state = JALR_EXECUTION2;
             JALR_EXECUTION2:                next_state = ALU_WRITEBACK;
             // BEQ Flow
@@ -140,8 +142,9 @@ module ControlUnit (
             FETCH: begin
                 // Update PC to point to the next address. PC + 4 by default
                 // We can rewrite this later to just skip the fetch, and go to decode MEM_WAIT immediately when jumped
+                //OLDPCEnable = 1'b1;                 // Update OLD PC
                 if (opcode != 7'b1101111 && opcode != 7'b1100111 && opcode != 7'b1100011) begin
-                    PCEnable = 1'b1;                     // Update PC
+                    //PCEnable = 1'b1;                     // Update PC
                     //OLDPCEnable = 1'b1;                 // Update OLD PC
                 end
                 ResultSrc = 2'b10;                  // ALURESULT which is PC + 4 Can remove this since its default
@@ -169,14 +172,23 @@ module ControlUnit (
             JAL_EXECUTION: begin
                 PCEnable = 1'b1;                    // Update PC
                 ALUSrcA = 2'b01;                    // OLD PC
+                ALUSrcB = 2'b01;                    // Immediate
+                ResultSrc = 2'b10;                  // ALU Result
+                // Not really needed since decode already store oldpc, but just to be sure
+                OLDPCEnable = 1'b1;                 // Update OLD PC
+            end
+            JAL_EXECUTION2: begin
+                // Now the calculated PC + 4 which we store in rd but let the ALU writeout do the writing to reg. Just compute to be stored in ALUOUT
+                ALUSrcA = 2'b01;                    // OLD PC
                 ALUSrcB = 2'b10;                    // 4
-                //OLDPCEnable = 1'b1;                 // Update OLD PC
+                
             end
             // JALR
             JALR_EXECUTION: begin
                 // Do the PC Update First. Then calculate the rd = PC + 4 next cycle
                 PCEnable = 1'b1;                    // Update PC
-                //OLDPCEnable = 1'b1;                 // Update OLD PC
+                // Not really needed since decode already store oldpc, but just to be sure
+                OLDPCEnable = 1'b1;                 // Update OLD PC
                 ALUSrcA = 2'b10;                    // REGA
                 ALUSrcB = 2'b01;                    // Immediate
                 ResultSrc = 2'b10;                  // ALURESULT
@@ -199,7 +211,8 @@ module ControlUnit (
                     3'b111: PCEnable = Zero ? 1'b0 : 1'b1; // BGEU
                     default: PCEnable = 1'b0;
                 endcase
-                //OLDPCEnable = PCEnable;                 // Update OLD PC
+                // Not really needed since decode already store oldpc, but just to be sure
+                OLDPCEnable = 1'b1;                 // Update OLD PC
             end
             // LW/SW
             MEMORY_ADDRESS_COMPUTATION: begin
@@ -241,6 +254,11 @@ module ControlUnit (
                 // LW
                 InstructionOrData = 1'b0;           // Instruction
                 InstructionRegisterEnable = 1'b1;   // Update Instruction Register
+                //if (opcode != 7'b1101111 && opcode != 7'b1100111 && opcode != 7'b1100011) begin
+                //    // PC is already updated by then, no need to reupdated
+                //    OLDPCEnable = 1'b1;                 // Update OLD PC
+                //end
+                PCEnable = 1'b1;                    // Update PC
                 OLDPCEnable = 1'b1;                 // Update OLD PC
             end
             // MEMORY_WAIT
