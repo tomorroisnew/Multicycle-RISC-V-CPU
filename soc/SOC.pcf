@@ -1,9 +1,13 @@
 
-# Onboard LEDs
-set_io ledr_n     26
-set_io ledg_n     25
-set_io led_r2     11
+# Onboard LEDS
+set_io red_led      11
+set_io green_led    37
+set_io led4grn      23
+set_io led3grn      25
+set_io led5grn      21
+set_io led_1red     26
 
 # Buttons
 set_io reset 20
 set_io start 19
+

@@ -2,11 +2,38 @@ module test_SOC;
 
     // Inputs
     logic reset;
-    logic clk;
     logic start;
 
     // Outputs
-    logic ledr_n, ledg_n;
+    logic ledr_n, ledg_n, led_r2;
+
+    // BUS
+    logic [31:0] TomemReadData, memAddress, memWriteData;
+    logic [3:0] byteMask;
+    logic memWrite;
+
+    logic clk, slowed_clk;
+    logic resetn;
+    logic start_toggle;
+    logic start_prev;
+    logic none;
+
+    // Clock generation using manual toggling
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;  // Toggle clock every 5 time units
+    end
+
+    assign slowed_clk = clk;
+
+    Clockworks #(
+        .SLOW(15) // Divide clock frequency by 2^10
+    ) CW (
+        .CLK(clk),
+        .RESET(reset),
+        .clk(none),
+        .resetn(resetn)
+    );
 
     // Waveform dump
     initial begin
@@ -28,27 +55,18 @@ module test_SOC;
         $dumpvars(1, test_SOC.cpu.RegFile[15]);
     end
 
-    // BUS
-    logic [31:0] TomemReadData, memAddress, memWriteData;
-    logic [31:0] bramReadData, gpioReadData;
-    logic [3:0] byteMask;
-    logic memWrite;
+    assign led_r2 = ~slowed_clk;
 
-    // Clock generation
-    logic gated_clk;
-    initial begin
-        clk = 0;
-        repeat (5000) begin
-            #5 clk = ~clk;  // Generate clock signal with period 10 time units
-        end
-    end
-
-    // Gated clock logic
-    always_comb begin
-        if (start) begin
-            gated_clk = clk;
+    // Toggle logic for start signal
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            start_toggle <= 0;
+            start_prev <= 0;
         end else begin
-            gated_clk = 0;
+            if (start && !start_prev) begin
+                start_toggle <= ~start_toggle;
+            end
+            start_prev <= start;
         end
     end
 
@@ -68,7 +86,6 @@ module test_SOC;
 
     // Monitor outputs
     initial begin
-        //$monitor("At time %t, reset = %0b, ledr_n = %0b, ledg_n = %0b", $time, reset, ledr_n, ledg_n);
         $monitor("At time %t, ledr_n = %0b, ledg_n = %0b", $time, ledr_n, ledg_n);
     end
 
@@ -76,6 +93,20 @@ module test_SOC;
     initial begin
         $dumpfile("waveform.vcd");
         $dumpvars(0, test_SOC);
+        $dumpvars(1, test_SOC.bram_mmio.ram0[100]);
+        $dumpvars(1, test_SOC.bram_mmio.ram1[100]);
+        $dumpvars(1, test_SOC.bram_mmio.ram2[100]);
+        $dumpvars(1, test_SOC.bram_mmio.ram3[100]);
+        $dumpvars(1, test_SOC.bram_mmio.ram0[101]);
+        $dumpvars(1, test_SOC.bram_mmio.ram1[102]);
+        $dumpvars(1, test_SOC.bram_mmio.ram2[103]);
+        $dumpvars(1, test_SOC.bram_mmio.ram3[104]);
+        $dumpvars(1, test_SOC.cpu.RegFile[1]);
+        $dumpvars(1, test_SOC.cpu.RegFile[2]);
+        $dumpvars(1, test_SOC.cpu.RegFile[5]);
+        $dumpvars(1, test_SOC.cpu.RegFile[11]);
+        $dumpvars(1, test_SOC.cpu.RegFile[14]);
+        $dumpvars(1, test_SOC.cpu.RegFile[15]);
     end
 
     // Instantiate CPU
@@ -85,22 +116,26 @@ module test_SOC;
         .memWriteData(memWriteData),
         .byteMask(byteMask),
         .memWrite(memWrite),
-        .reset(reset),
-        .clk(gated_clk)  // Use gated clock
+        .reset(resetn),
+        .clk(clk)  // Use slowed clock
     );
 
     // Memory decoder for the mmio.
     // 32'h0000_0000 - 32'h0000_07ff BRAM // Change to flash spi soon
     // 32'hFFFF_FFF0 - 32'hFFFF_FFF3 GPIO
     BRAM_MMIO bram_mmio (
-        .clk(gated_clk),  // Use gated clock
+        .clk(clk),  // Use slowed clock
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
         .memReadData(bramReadData), .byteMask(byteMask)
     );
-    GPIO_MMIO gpio_mmio (
-        .clk(gated_clk),  // Use gated clock
+    GPIO_MMIO #(
+        //.BASE_MEMORY(32'hFFFF_FFF0),  // Default value for BASE_MEMORY
+        //  .TOP_MEMORY(32'hFFFF_FFF3)    // Default value for TOP_MEMORY
+    ) gpio_mmio (
+        .clk(clk),  // Use original clock
+        .reset(resetn),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
@@ -108,16 +143,13 @@ module test_SOC;
         .memReadData(gpioReadData),
         .ledr_n(ledr_n), .ledg_n(ledg_n)
     );
-    logic test, test2;
-    assign test = memAddress >= 32'h0000_0000 && memAddress <= 32'h0000_01FF;
-    assign test2 = memAddress >= 32'hFFFF_FFF0 && memAddress <= 32'hFFFF_FFF3;
 
     // Introduce a 1-cycle delay for the memory address since one memory access is its own state
     // Memory accesses are sequential, but we compare the address combinational, so it result in a mismatch
     // Since the data is only available in the next cycle but by then the address has changed
     // So we save the original address used to access the memory and use that to compare the data
     logic [31:0] delayedMemAddress;
-    always_ff @(posedge gated_clk or posedge reset) begin
+    always_ff @(posedge slowed_clk or posedge reset) begin
         if (reset) begin
             delayedMemAddress <= 32'h0000_0000;  // Reset condition
         end else begin
@@ -126,6 +158,7 @@ module test_SOC;
     end
 
     // Multiplexer for memReadData
+    logic [31:0] bramReadData, gpioReadData;
     always_comb begin
         // BRAM
         if (delayedMemAddress >= bram_mmio.BASE_MEMORY && delayedMemAddress <= bram_mmio.TOP_MEMORY) begin

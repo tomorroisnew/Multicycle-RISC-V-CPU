@@ -1,14 +1,16 @@
 module SOC (
     input logic reset,
     input logic start,  // Add start signal
-    output logic ledr_n, ledg_n, led_r2
+    output logic red_led, green_led, led4grn, led3grn, led5grn, led_1red
 );
     // BUS
     logic [31:0] TomemReadData, memAddress, memWriteData;
+    logic [31:0] bramReadData, gpioReadData;
     logic [3:0] byteMask;
     logic memWrite;
 
-    logic clk, gated_clk;
+    logic clk, slowed_clk;
+    logic resetn;
     logic start_toggle;
     logic start_prev;
 
@@ -19,29 +21,17 @@ module SOC (
         .CLKLF(clk)
     );
 
-    assign led_r2 = start_toggle;
+    Clockworks #(
+        .SLOW(8) // Divide clock frequency by 2^10
+    ) CW (
+        .CLK(clk),
+        .RESET(reset),
+        .clk(slowed_clk),
+        .resetn(resetn)
+    );
 
-    // Toggle logic for start signal
-    always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
-            start_toggle <= 0;
-            start_prev <= 0;
-        end else begin
-            if (start && !start_prev) begin
-                start_toggle <= ~start_toggle;
-            end
-            start_prev <= start;
-        end
-    end
+    assign red_led = slowed_clk;
 
-    // Gated clock logic
-    always_comb begin
-        if (start_toggle) begin
-            gated_clk = clk;
-        end else begin
-            gated_clk = 0;
-        end
-    end
 
     // Instantiate CPU
     CPU cpu (
@@ -51,28 +41,34 @@ module SOC (
         .byteMask(byteMask),
         .memWrite(memWrite),
         .reset(reset),
-        .clk(gated_clk)  // Use gated clock
+        .clk(slowed_clk)  // Use gated clock
     );
 
     // Memory decoder for the mmio.
-    // 32'h0000_0000 - 32'h0000_01FF BRAM // Change to flash spi soon
+    // 32'h0000_0000 - 32'h0000_07ff BRAM // Change to flash spi soon
     // 32'hFFFF_FFF0 - 32'hFFFF_FFF3 GPIO
-    // 32'hFFFF_FFF4 - 32'hFFFF_FFF7 UART
-    BRAM_MMIO bram_mmio (
-        .clk(gated_clk),  // Use gated clock
+    BRAM_MMIO # (
+        .BASE_MEMORY(32'h0000_0000),
+        .TOP_MEMORY(32'h0000_07ff)
+    ) bram_mmio (
+        .clk(slowed_clk),  // Use gated clock
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
         .memReadData(bramReadData), .byteMask(byteMask)
     );
-    GPIO_MMIO gpio_mmio (
-        .clk(gated_clk),  // Use gated clock
+    GPIO_MMIO # (
+        .BASE_MEMORY(32'hFFFF_FFF0),
+        .TOP_MEMORY(32'hFFFF_FFF3)
+    ) gpio_mmio (
+        .clk(slowed_clk),  // Use gated clock
+        .reset(reset),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
         .byteMask(byteMask),
         .memReadData(gpioReadData),
-        .ledr_n(ledr_n), .ledg_n(ledg_n)
+        .led1(led_1red), .led3(led4grn), .led4(led3grn), .led5(led5grn)
     );
 
     // Introduce a 1-cycle delay for the memory address since one memory access is its own state
@@ -80,7 +76,7 @@ module SOC (
     // Since the data is only available in the next cycle but by then the address has changed
     // So we save the original address used to access the memory and use that to compare the data
     logic [31:0] delayedMemAddress;
-    always_ff @(posedge gated_clk or posedge reset) begin
+    always_ff @(posedge slowed_clk or posedge reset) begin
         if (reset) begin
             delayedMemAddress <= 32'h0000_0000;  // Reset condition
         end else begin
@@ -89,17 +85,36 @@ module SOC (
     end
 
     // Multiplexer for memReadData
-    logic [31:0] bramReadData, gpioReadData;
-
     always_comb begin
         // BRAM
-        if (delayedMemAddress >= bram_mmio.BASE_MEMORY && delayedMemAddress <= bram_mmio.TOP_MEMORY) begin
+        if (delayedMemAddress >= 32'h0000_0000 && delayedMemAddress <= 32'h0000_07ff) begin
             TomemReadData = bramReadData;
-        end else if (delayedMemAddress >= gpio_mmio.BASE_MEMORY && delayedMemAddress <= gpio_mmio.TOP_MEMORY) begin
+        end else if (delayedMemAddress >= 32'hFFFF_FFF0 && delayedMemAddress <= 32'hFFFF_FFF3) begin
             TomemReadData = gpioReadData;
         end else begin
             TomemReadData = 32'h0000_0000;
         end
     end
 
+endmodule
+
+
+module Clockworks 
+(
+   input  CLK,   // clock pin of the board
+   input  RESET, // reset pin of the board
+   output clk,   // (optionally divided) clock for the design.
+   output resetn // (optionally timed) negative reset for the design (more on this later)
+);
+   parameter SLOW = 4;
+   reg [SLOW:0] slow_CLK = 0;
+   always @(posedge CLK or posedge RESET) begin
+      if (RESET) begin
+         slow_CLK <= 0;
+      end else begin
+         slow_CLK <= slow_CLK + 1;
+      end
+   end
+   assign clk = slow_CLK[SLOW];
+   assign resetn = ~RESET;
 endmodule

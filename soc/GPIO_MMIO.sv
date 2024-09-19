@@ -3,12 +3,13 @@ module GPIO_MMIO #(
     parameter logic [31:0] TOP_MEMORY  = 32'hFFFF_FFF3  // Adjusted to cover 4 bytes (32 bits)
 )(
     input  logic        clk,
+    input  logic        reset,         // Added reset input
     input  logic [31:0] memAddress,
     input  logic [31:0] memWriteData,
     input  logic        memWrite,
     input  logic [3:0]  byteMask,
     output logic [31:0] memReadData,
-    output logic ledr_n, ledg_n
+    output logic led1, led2, led3, led4, led5
 );
 // All memories are big endian
 
@@ -27,7 +28,7 @@ module GPIO_MMIO #(
     logic [31:0] readDataOut;
 
     // Assign LEDs, first 4 bits
-    assign {ledr_n, ledg_n} = ram3[1:0];
+    assign {led1, led2, led3, led4, led5} = ram3[4:0];
 
     assign memReadData = readDataOut;
 
@@ -35,20 +36,28 @@ module GPIO_MMIO #(
     assign baseaddress = memAddress - BASE_MEMORY;
 
     // Combined sequential write and read
-    always_ff @(posedge clk) begin
-        if (memAddress >= BASE_MEMORY && memAddress <= TOP_MEMORY) begin
-            if (memWrite) begin
-                if (byteMask[0]) ram0 <= memWriteData[7:0];
-                if (byteMask[1]) ram1 <= memWriteData[15:8];
-                if (byteMask[2]) ram2 <= memWriteData[23:16];
-                if (byteMask[3]) ram3 <= memWriteData[31:24];
-            end
-            readDataOut[7:0]   <= ram0;
-            readDataOut[15:8]  <= ram1;
-            readDataOut[23:16] <= ram2;
-            readDataOut[31:24] <= ram3;
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            ram0 <= 8'h00;
+            ram1 <= 8'h00;
+            ram2 <= 8'h00;
+            ram3 <= 8'h00;
+            readDataOut <= 32'h0000_0000;
         end else begin
-            readDataOut <= 32'hzzzz_zzzz; // Default value if address is out of range
+            if (memAddress >= BASE_MEMORY && memAddress <= TOP_MEMORY) begin
+                if (memWrite) begin
+                    if (byteMask[0]) ram0 <= memWriteData[7:0];
+                    if (byteMask[1]) ram1 <= memWriteData[15:8];
+                    if (byteMask[2]) ram2 <= memWriteData[23:16];
+                    if (byteMask[3]) ram3 <= memWriteData[31:24];
+                end
+                readDataOut[7:0]   <= ram0;
+                readDataOut[15:8]  <= ram1;
+                readDataOut[23:16] <= ram2;
+                readDataOut[31:24] <= ram3;
+            end else begin
+                readDataOut <= 32'hzzzz_zzzz; // Default value if address is out of range
+            end
         end
     end
 

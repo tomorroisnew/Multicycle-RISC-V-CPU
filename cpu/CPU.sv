@@ -16,7 +16,7 @@ module CPU (
     ///////////////////////////////////////////////////////////// FETCH //////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Combinational Wires for signals. 
-    logic PCEnable, InstructionRegisterEnable, InstructionOrData;// InstructionOrData control the multiplexer for the input in memory. Will also be used by Memory state
+    logic PCEnable, InstructionRegisterEnable, InstructionOrData, OLDPCEnable;// InstructionOrData control the multiplexer for the input in memory. Will also be used by Memory state
 
     // The registers.
     logic [31:0] PC, InstructionRegister, OLDPC;
@@ -269,6 +269,7 @@ module CPU (
                     2'b01: byteMask = 4'b0100;
                     2'b10: byteMask = 4'b0010;
                     2'b11: byteMask = 4'b0001;
+                    default: byteMask = 4'b0000;
                 endcase
             end
             3'b001: begin // LH/SH
@@ -276,13 +277,17 @@ module CPU (
                 case (specificByte)
                     2'b00: byteMask = 4'b1100; // little endian so we write the lowest register
                     2'b10: byteMask = 4'b0011;
+                    default: byteMask = 4'b0000;
                 endcase
             end 
             3'b010: begin // LW/SW
                 TomemWriteData  = worddata;
                 byteMask = 4'b1111;
             end 
-            default: byteMask = 4'b0000;
+            default: begin 
+                TomemWriteData = 0;
+                byteMask = 4'b0000;
+            end
         endcase
     end
 
@@ -312,7 +317,9 @@ module CPU (
     // Update the registers / Register file in this instance
     always_ff @( posedge clk or posedge reset ) begin
         if (reset) begin
-            MemoryDataRegister <= 32'b0;
+            for (int i = 0; i < 32; i++) begin
+                RegFile[i] <= 32'b0;
+            end
         end else begin
             if (RegWrite) begin
                 RegFile[rd] <= Result;

@@ -7,17 +7,17 @@
 //void delay() {
 //    for (volatile int i = 0; i < 10000; i++);  // Simple delay loop
 //}
-//void delay() {
-//    *(volatile int *)LED_ADDR = 0xFFFFFFFF;  // Simple delay loop
-//}
-////
-//void gitna() {
-//    *(volatile int *)LED_ADDR = *(volatile int *)LED_ADDR + 1;
-//    gitna();
-//    //*(volatile int *)LED_ADDR = 0xEEEEEEEE;  // Simple delay loop
-//    //delay();
-//    //*(volatile int *)LED_ADDR = 0xDEDEDEDE;  // Simple delay loop
-//}
+void delay() {
+    *(volatile int *)LED_ADDR = 0xFFFFFFFF;  // Simple delay loop
+}
+//
+void gitna() {
+    *(volatile int *)LED_ADDR = *(volatile int *)LED_ADDR + 1;
+    //gitna();
+    *(volatile int *)LED_ADDR = 0xEEEEEEEE;  // Simple delay loop
+    delay();
+    *(volatile int *)LED_ADDR = 0xDEDEDEDE;  // Simple delay loop
+}
 
 void main() {
     //volatile int *led = (volatile int *)LED_ADDR;  // Create a pointer to the LED address
@@ -33,16 +33,17 @@ void main() {
     //else {
     //    *(volatile int *)LED_ADDR = 0xDEDEDEDE;
     //}
-    //while(1) {
-        *(volatile int *)LED_ADDR = 0x00000000;
-        *(volatile short *)LED_ADDR  = 0xFFFF;
-        *(volatile char *)LED_ADDR = 0xDE;
-        *(volatile char *)LED_ADDR;
-        //gitna();
-        //*(volatile int *)LED_ADDR = 0xAAAAAAAA;
-        //delay();
-        //*(volatile int *)LED_ADDR = 0x55555555;
-        //gitna();
-    //}
+    while(1) {
+        //*(volatile int *)LED_ADDR = 0x00000000;
+        //*(volatile short *)(LED_ADDR+2)  = 0xFFFF;
+        //*(volatile char *)(LED_ADDR+1) = 0xDE;
+        //*(volatile char *)LED_ADDR;
+        *(volatile int *)LED_ADDR = 0xDDDDDDDD;
+        gitna();
+        *(volatile int *)LED_ADDR = 0xAAAAAAAA;
+        delay();
+        *(volatile int *)LED_ADDR = 0x55555555;
+        gitna();
+    }
     return;
 }

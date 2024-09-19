@@ -9,10 +9,20 @@ module CPU_Load_Testbench;
     // Declare control signals for CPU operation
     logic PCEnable, InstructionRegisterEnable, ImmediateSrc;
     
+    logic slowed_clk;
+    Clockworks #(
+        .SLOW(15) // Divide clock frequency by 2^10
+    ) CW (
+        .CLK(clk),
+        .RESET(reset),
+        .clk(slowed_clk),
+        .resetn(resetn)
+    );
+    
     // Instantiate CPU and connect signals
     CPU uut (
         .memReadData(memReadData),
-        .clk(clk),
+        .clk(slowed_clk),
         .reset(reset),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
@@ -25,7 +35,7 @@ module CPU_Load_Testbench;
         .BASE_MEMORY(32'h0000_0000),
         .TOP_MEMORY(32'h0000_01ff)
     ) memory (
-        .clk(clk),
+        .clk(slowed_clk),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),

@@ -9,26 +9,26 @@ _start:
     nop                             # No-op (optional)
 
 main:
-    # Stack frame setup
-    addi            sp, sp, -16      # Create space on the stack
-    sw              ra, 12(sp)       # Save return address
-    sw              s0, 8(sp)        # Save s0 register
-
-    li      a0, 0
+        addi    sp, sp, -16
+        sw      ra, 12(sp)
+        sw      s0, 8(sp)
+        addi    s0, sp, 16
+        li      a0, 0
         sw      a0, -12(s0)
-        lui     a1, 699051
-        addi    a1, a1, -1366
-        sw      a1, 1280(zero)
-        lui     a1, 12
-        addi    a1, a1, -1093
-        sh      a1, 1280(zero)
-        li      a1, 204
-        sb      a1, 1281(zero)
-        lw      a1, 1280(zero)
-
-    # Stack frame teardown and return
-    lw              ra, 12(sp)       # Restore return address
-    lw              s0, 8(sp)        # Restore s0 register
-    addi            sp, sp, 16       # Free up stack space
-
-    jalr x0, ra, 0                   # Return to caller
+        lw      a0, -16(zero)
+        bnez    a0, .LBB0_2
+        j       .LBB0_1
+.LBB0_1:
+        li      a0, -1
+        sw      a0, -16(zero)
+        j       .LBB0_3
+.LBB0_2:
+        li      a0, 0
+        sw      a0, -16(zero)
+        j       .LBB0_3
+.LBB0_3:
+        li      a0, 0
+        lw      ra, 12(sp)
+        lw      s0, 8(sp)
+        addi    sp, sp, 16
+        ret
