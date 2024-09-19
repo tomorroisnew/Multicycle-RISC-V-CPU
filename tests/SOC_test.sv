@@ -3,6 +3,7 @@ module test_SOC;
     // Inputs
     logic reset;
     logic clk;
+    logic start;
 
     // Outputs
     logic ledr_n, ledg_n;
@@ -11,17 +12,17 @@ module test_SOC;
     initial begin
         $dumpfile("waveform.vcd");
         $dumpvars(0, test_SOC);
-        $dumpvars(1, test_SOC.bram_mmio.ram0[0]);
-        $dumpvars(1, test_SOC.bram_mmio.ram1[0]);
-        $dumpvars(1, test_SOC.bram_mmio.ram2[0]);
-        $dumpvars(1, test_SOC.bram_mmio.ram3[0]);
-        $dumpvars(1, test_SOC.bram_mmio.ram0[1]);
-        $dumpvars(1, test_SOC.bram_mmio.ram1[1]);
-        $dumpvars(1, test_SOC.bram_mmio.ram2[1]);
-        $dumpvars(1, test_SOC.bram_mmio.ram3[1]);
+        $dumpvars(1, test_SOC.bram_mmio.ram0[100]);
+        $dumpvars(1, test_SOC.bram_mmio.ram1[100]);
+        $dumpvars(1, test_SOC.bram_mmio.ram2[100]);
+        $dumpvars(1, test_SOC.bram_mmio.ram3[100]);
+        $dumpvars(1, test_SOC.bram_mmio.ram0[101]);
+        $dumpvars(1, test_SOC.bram_mmio.ram1[102]);
+        $dumpvars(1, test_SOC.bram_mmio.ram2[103]);
+        $dumpvars(1, test_SOC.bram_mmio.ram3[104]);
         $dumpvars(1, test_SOC.cpu.RegFile[1]);
         $dumpvars(1, test_SOC.cpu.RegFile[2]);
-        $dumpvars(1, test_SOC.cpu.RegFile[10]);
+        $dumpvars(1, test_SOC.cpu.RegFile[5]);
         $dumpvars(1, test_SOC.cpu.RegFile[11]);
         $dumpvars(1, test_SOC.cpu.RegFile[14]);
         $dumpvars(1, test_SOC.cpu.RegFile[15]);
@@ -34,10 +35,20 @@ module test_SOC;
     logic memWrite;
 
     // Clock generation
+    logic gated_clk;
     initial begin
         clk = 0;
-        forever begin
+        repeat (5000) begin
             #5 clk = ~clk;  // Generate clock signal with period 10 time units
+        end
+    end
+
+    // Gated clock logic
+    always_comb begin
+        if (start) begin
+            gated_clk = clk;
+        end else begin
+            gated_clk = 0;
         end
     end
 
@@ -48,10 +59,17 @@ module test_SOC;
         reset = 0;
     end
 
+    // Enable start signal
+    initial begin
+        start = 0;
+        #50;
+        start = 1;
+    end
+
     // Monitor outputs
     initial begin
-        $monitor("At time %t, reset = %0b, ledr_n = %0b, ledg_n = %0b", $time, reset, ledr_n, ledg_n);
-        //$monitor("At time %t, ledr_n = %0b, ledg_n = %0b, Instruction = %h", $time, ledr_n, ledg_n, cpu.InstructionRegister);
+        //$monitor("At time %t, reset = %0b, ledr_n = %0b, ledg_n = %0b", $time, reset, ledr_n, ledg_n);
+        $monitor("At time %t, ledr_n = %0b, ledg_n = %0b", $time, ledr_n, ledg_n);
     end
 
     // Waveform dump
@@ -68,21 +86,21 @@ module test_SOC;
         .byteMask(byteMask),
         .memWrite(memWrite),
         .reset(reset),
-        .clk(clk)
+        .clk(gated_clk)  // Use gated clock
     );
 
     // Memory decoder for the mmio.
     // 32'h0000_0000 - 32'h0000_07ff BRAM // Change to flash spi soon
     // 32'hFFFF_FFF0 - 32'hFFFF_FFF3 GPIO
     BRAM_MMIO bram_mmio (
-        .clk(clk),
+        .clk(gated_clk),  // Use gated clock
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
         .memReadData(bramReadData), .byteMask(byteMask)
     );
     GPIO_MMIO gpio_mmio (
-        .clk(clk),
+        .clk(gated_clk),  // Use gated clock
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
@@ -99,7 +117,7 @@ module test_SOC;
     // Since the data is only available in the next cycle but by then the address has changed
     // So we save the original address used to access the memory and use that to compare the data
     logic [31:0] delayedMemAddress;
-    always_ff @(posedge clk) begin
+    always_ff @(posedge gated_clk or posedge reset) begin
         if (reset) begin
             delayedMemAddress <= 32'h0000_0000;  // Reset condition
         end else begin

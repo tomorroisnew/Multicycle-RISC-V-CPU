@@ -8,37 +8,20 @@
 	.globl	main
 	.type	main, @function
 main:
-	addi	sp,sp,-32
-	sw	s0,28(sp)
-	addi	s0,sp,32
-.L6:
+	addi	sp,sp,-16
+	sw	s0,12(sp)
+	addi	s0,sp,16
 	li	a5,-16
 	sw	zero,0(a5)
-	sw	zero,-20(s0)
-	j	.L2
-.L3:
-	lw	a5,-20(s0)
-	addi	a5,a5,1
-	sw	a5,-20(s0)
-.L2:
-	lw	a4,-20(s0)
-	li	a5,4096
-	addi	a5,a5,903
-	ble	a4,a5,.L3
 	li	a5,-16
 	li	a4,-1
-	sw	a4,0(a5)
-	sw	zero,-24(s0)
-	j	.L4
-.L5:
-	lw	a5,-24(s0)
-	addi	a5,a5,1
-	sw	a5,-24(s0)
-.L4:
-	lw	a4,-24(s0)
-	li	a5,4096
-	addi	a5,a5,903
-	ble	a4,a5,.L5
-	j	.L6
+	sh	a4,0(a5)
+	li	a5,-16
+	li	a4,-34
+	sb	a4,0(a5)
+	nop
+	lw	s0,12(sp)
+	addi	sp,sp,16
+	jr	ra
 	.size	main, .-main
 	.ident	"GCC: () 13.2.0"

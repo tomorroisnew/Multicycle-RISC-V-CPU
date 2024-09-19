@@ -23,7 +23,7 @@ module CPU_tb;
     // Clock generation
     initial begin
         clk = 0;
-        forever #5 clk = ~clk; // 10ns period clock
+        repeat (50) #5 clk = ~clk; // 10ns period clock, run only 500 times
     end
 
     #// Reset generation

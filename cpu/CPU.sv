@@ -250,17 +250,38 @@ module CPU (
     // Wire them to the io of the cpu module. MemAddress is already wired in Fetch
     assign memWrite = MemWrite;
     logic [31:0] TomemWriteData;
-    assign TomemWriteData  = {REGB[7:0], REGB[15:8], REGB[23:16], REGB[31:24]}; // Reverse the data to be written to memory
+    //assign TomemWriteData  = {REGB[7:0], REGB[15:8], REGB[23:16], REGB[31:24]}; // Reverse the data to be written to memory
     assign memWriteData = TomemWriteData; // Output of the RegB Register
 
     // BYTE SELECT FOR LB and LW and SW and SB, generate a byte 4 bit mask to mask each bit of the data depending on instruction
+    logic [31:0] bytedata, halfworddata, worddata;
+    logic [1:0] specificByte; // Byte to be selected
+    assign bytedata = {{REGB[7:0]}, {REGB[7:0]}, {REGB[7:0]}, {REGB[7:0]}};
+    assign halfworddata = {{REGB[7:0], REGB[15:8]}, {REGB[7:0], REGB[15:8]}};
+    assign worddata = {REGB[7:0], REGB[15:8], REGB[23:16], REGB[31:24]};
+    assign specificByte = memAddress[1:0];
     always_comb begin
         case (funct3)
-            3'b000: byteMask = 4'b1000; // LB/SB
-            3'b001: byteMask = 4'b1100; // LH/SH
-            3'b010: byteMask = 4'b1111; // LW/SW
-            3'b100: byteMask = 4'b1000; // LBU
-            3'b101: byteMask = 4'b1100; // LHU
+            3'b000: begin // LB and SB
+                TomemWriteData = bytedata;
+                case (specificByte)
+                    2'b00: byteMask = 4'b1000; // little endian so we write the lowest register
+                    2'b01: byteMask = 4'b0100;
+                    2'b10: byteMask = 4'b0010;
+                    2'b11: byteMask = 4'b0001;
+                endcase
+            end
+            3'b001: begin // LH/SH
+                TomemWriteData = halfworddata;
+                case (specificByte)
+                    2'b00: byteMask = 4'b1100; // little endian so we write the lowest register
+                    2'b10: byteMask = 4'b0011;
+                endcase
+            end 
+            3'b010: begin // LW/SW
+                TomemWriteData  = worddata;
+                byteMask = 4'b1111;
+            end 
             default: byteMask = 4'b0000;
         endcase
     end

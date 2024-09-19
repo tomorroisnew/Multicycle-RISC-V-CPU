@@ -38,10 +38,10 @@ module GPIO_MMIO #(
     always_ff @(posedge clk) begin
         if (memAddress >= BASE_MEMORY && memAddress <= TOP_MEMORY) begin
             if (memWrite) begin
-                if (byteMask[0]) ram0 <= memWriteData[31:24];
-                if (byteMask[1]) ram1 <= memWriteData[23:16];
-                if (byteMask[2]) ram2 <= memWriteData[15:8];
-                if (byteMask[3]) ram3 <= memWriteData[7:0];
+                if (byteMask[0]) ram0 <= memWriteData[7:0];
+                if (byteMask[1]) ram1 <= memWriteData[15:8];
+                if (byteMask[2]) ram2 <= memWriteData[23:16];
+                if (byteMask[3]) ram3 <= memWriteData[31:24];
             end
             readDataOut[7:0]   <= ram0;
             readDataOut[15:8]  <= ram1;

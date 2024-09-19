@@ -142,11 +142,6 @@ module ControlUnit (
             FETCH: begin
                 // Update PC to point to the next address. PC + 4 by default
                 // We can rewrite this later to just skip the fetch, and go to decode MEM_WAIT immediately when jumped
-                //OLDPCEnable = 1'b1;                 // Update OLD PC
-                if (opcode != 7'b1101111 && opcode != 7'b1100111 && opcode != 7'b1100011) begin
-                    //PCEnable = 1'b1;                     // Update PC
-                    //OLDPCEnable = 1'b1;                 // Update OLD PC
-                end
                 ResultSrc = 2'b10;                  // ALURESULT which is PC + 4 Can remove this since its default
                 ALUSrcB = 2'b10;                       // Constant 4 for updating pc
             end
@@ -174,8 +169,6 @@ module ControlUnit (
                 ALUSrcA = 2'b01;                    // OLD PC
                 ALUSrcB = 2'b01;                    // Immediate
                 ResultSrc = 2'b10;                  // ALU Result
-                // Not really needed since decode already store oldpc, but just to be sure
-                OLDPCEnable = 1'b1;                 // Update OLD PC
             end
             JAL_EXECUTION2: begin
                 // Now the calculated PC + 4 which we store in rd but let the ALU writeout do the writing to reg. Just compute to be stored in ALUOUT
@@ -187,8 +180,6 @@ module ControlUnit (
             JALR_EXECUTION: begin
                 // Do the PC Update First. Then calculate the rd = PC + 4 next cycle
                 PCEnable = 1'b1;                    // Update PC
-                // Not really needed since decode already store oldpc, but just to be sure
-                OLDPCEnable = 1'b1;                 // Update OLD PC
                 ALUSrcA = 2'b10;                    // REGA
                 ALUSrcB = 2'b01;                    // Immediate
                 ResultSrc = 2'b10;                  // ALURESULT
@@ -212,7 +203,7 @@ module ControlUnit (
                     default: PCEnable = 1'b0;
                 endcase
                 // Not really needed since decode already store oldpc, but just to be sure
-                OLDPCEnable = 1'b1;                 // Update OLD PC
+                //OLDPCEnable = 1'b1;                 // Update OLD PC
             end
             // LW/SW
             MEMORY_ADDRESS_COMPUTATION: begin
@@ -254,10 +245,6 @@ module ControlUnit (
                 // LW
                 InstructionOrData = 1'b0;           // Instruction
                 InstructionRegisterEnable = 1'b1;   // Update Instruction Register
-                //if (opcode != 7'b1101111 && opcode != 7'b1100111 && opcode != 7'b1100011) begin
-                //    // PC is already updated by then, no need to reupdated
-                //    OLDPCEnable = 1'b1;                 // Update OLD PC
-                //end
                 PCEnable = 1'b1;                    // Update PC
                 OLDPCEnable = 1'b1;                 // Update OLD PC
             end

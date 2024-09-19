@@ -21,7 +21,7 @@
         }
       },
       "cells": {
-        "$specify$2731": {
+        "$specify$19661": {
           "hide_name": 1,
           "type": "$specify2",
           "parameters": {
@@ -2691,7 +2691,7 @@
     "SB_DFFER": {
       "attributes": {
         "blackbox": "00000000000000000000000000000001",
-        "cells_not_processed": "00000000000000000000000000000001",
+        "abc9_bypass": "00000000000000000000000000000001",
         "src": "/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/cells_sim.v:653.1-730.10"
       },
       "ports": {
@@ -3598,7 +3598,7 @@
     "SB_DFFR": {
       "attributes": {
         "blackbox": "00000000000000000000000000000001",
-        "cells_not_processed": "00000000000000000000000000000001",
+        "abc9_bypass": "00000000000000000000000000000001",
         "src": "/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/cells_sim.v:400.1-468.10"
       },
       "ports": {
@@ -4043,6 +4043,7 @@
     "SB_HFOSC": {
       "attributes": {
         "blackbox": "00000000000000000000000000000001",
+        "cells_not_processed": "00000000000000000000000000000001",
         "src": "/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/cells_sim.v:2664.1-2681.10"
       },
       "parameter_default_values": {
@@ -5303,7 +5304,6 @@
     "SB_LFOSC": {
       "attributes": {
         "blackbox": "00000000000000000000000000000001",
-        "cells_not_processed": "00000000000000000000000000000001",
         "src": "/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/cells_sim.v:2684.1-2689.10"
       },
       "ports": {
@@ -5348,9 +5348,8 @@
     },
     "SB_LUT4": {
       "attributes": {
-        "blackbox": "00000000000000000000000000000001",
         "abc9_lut": "00000000000000000000000000000001",
-        "cells_not_processed": "00000000000000000000000000000001",
+        "blackbox": "00000000000000000000000000000001",
         "src": "/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/cells_sim.v:177.1-225.10"
       },
       "parameter_default_values": {
@@ -9965,12 +9964,16 @@
     "SOC": {
       "attributes": {
         "top": "00000000000000000000000000000001",
-        "src": "./soc/SOC.sv:1.1-87.10"
+        "src": "./soc/SOC.sv:1.1-105.10"
       },
       "ports": {
         "reset": {
           "direction": "input",
           "bits": [ 2 ]
+        },
+        "start": {
+          "direction": "input",
+          "bits": [ 3 ]
         },
         "ledr_n": {
           "direction": "output",
@@ -9979,39 +9982,160 @@
         "ledg_n": {
           "direction": "output",
           "bits": [ "0" ]
+        },
+        "led_r2": {
+          "direction": "output",
+          "bits": [ 4 ]
         }
       },
       "cells": {
+        "OSC": {
+          "hide_name": 0,
+          "type": "SB_LFOSC",
+          "parameters": {
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "./soc/SOC.sv:16.14-20.6"
+          },
+          "port_directions": {
+            "CLKLF": "output",
+            "CLKLFEN": "input",
+            "CLKLFPU": "input"
+          },
+          "connections": {
+            "CLKLF": [ 5 ],
+            "CLKLFEN": [ "1" ],
+            "CLKLFPU": [ "1" ]
+          }
+        },
+        "led_r2_SB_DFFER_Q": {
+          "hide_name": 0,
+          "type": "SB_DFFER",
+          "parameters": {
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "./soc/SOC.sv:25.5-35.8|/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/ff_map.v:14.63-14.116"
+          },
+          "port_directions": {
+            "C": "input",
+            "D": "input",
+            "E": "input",
+            "Q": "output",
+            "R": "input"
+          },
+          "connections": {
+            "C": [ 5 ],
+            "D": [ 6 ],
+            "E": [ 7 ],
+            "Q": [ 4 ],
+            "R": [ 2 ]
+          }
+        },
+        "led_r2_SB_LUT4_I3": {
+          "hide_name": 0,
+          "type": "SB_LUT4",
+          "parameters": {
+            "LUT_INIT": "0000000011111111"
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/cells_map.v:12.34-13.52"
+          },
+          "port_directions": {
+            "I0": "input",
+            "I1": "input",
+            "I2": "input",
+            "I3": "input",
+            "O": "output"
+          },
+          "connections": {
+            "I0": [ "0" ],
+            "I1": [ "0" ],
+            "I2": [ "0" ],
+            "I3": [ 4 ],
+            "O": [ 6 ]
+          }
+        },
+        "start_SB_DFFR_D": {
+          "hide_name": 0,
+          "type": "SB_DFFR",
+          "parameters": {
+          },
+          "attributes": {
+            "always_ff": "00000000000000000000000000000001",
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "./soc/SOC.sv:25.5-35.8|/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/ff_map.v:9.57-9.103"
+          },
+          "port_directions": {
+            "C": "input",
+            "D": "input",
+            "Q": "output",
+            "R": "input"
+          },
+          "connections": {
+            "C": [ 5 ],
+            "D": [ 3 ],
+            "Q": [ 8 ],
+            "R": [ 2 ]
+          }
+        },
+        "start_SB_LUT4_I2": {
+          "hide_name": 0,
+          "type": "SB_LUT4",
+          "parameters": {
+            "LUT_INIT": "0000000011110000"
+          },
+          "attributes": {
+            "module_not_derived": "00000000000000000000000000000001",
+            "src": "/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/cells_map.v:17.34-18.52"
+          },
+          "port_directions": {
+            "I0": "input",
+            "I1": "input",
+            "I2": "input",
+            "I3": "input",
+            "O": "output"
+          },
+          "connections": {
+            "I0": [ "0" ],
+            "I1": [ "0" ],
+            "I2": [ 3 ],
+            "I3": [ 8 ],
+            "O": [ 7 ]
+          }
+        }
       },
       "netnames": {
+        "TomemReadData": {
+          "hide_name": 0,
+          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+          "attributes": {
+            "src": "./soc/SOC.sv:7.18-7.31"
+          }
+        },
         "bram_mmio.BASE_MEMORY": {
           "hide_name": 0,
           "bits": [ "x" ],
           "attributes": {
-            "src": "./soc/SOC.sv:78.34-78.55"
+            "src": "./soc/SOC.sv:96.34-96.55"
           }
         },
         "bram_mmio.TOP_MEMORY": {
           "hide_name": 0,
           "bits": [ "x" ],
           "attributes": {
-            "src": "./soc/SOC.sv:78.80-78.100"
+            "src": "./soc/SOC.sv:96.80-96.100"
           }
         },
         "bram_mmio.byteMask": {
           "hide_name": 0,
-          "bits": [ "x", "x", "x", "x" ],
+          "bits": [ "x", "x", "x", "1" ],
           "attributes": {
             "hdlname": "bram_mmio byteMask",
             "src": "./soc/BRAM_MMIO.sv:9.25-9.33"
-          }
-        },
-        "bram_mmio.memReadData": {
-          "hide_name": 0,
-          "bits": [ "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x" ],
-          "attributes": {
-            "hdlname": "bram_mmio memReadData",
-            "src": "./soc/BRAM_MMIO.sv:10.25-10.36"
           }
         },
         "bram_mmio.memWriteData": {
@@ -10022,24 +10146,39 @@
             "src": "./soc/BRAM_MMIO.sv:7.25-7.37"
           }
         },
-        "bram_mmio.readDataOut": {
-          "hide_name": 0,
-          "bits": [ "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x" ],
-          "attributes": {
-            "hdlname": "bram_mmio readDataOut",
-            "src": "./soc/BRAM_MMIO.sv:17.14-17.25"
-          }
-        },
         "byteMask": {
           "hide_name": 0,
-          "bits": [ "0", "0", "0", "1" ],
+          "bits": [ "x", "x", "x", "1" ],
           "attributes": {
-            "src": "./soc/SOC.sv:7.17-7.25"
+            "src": "./soc/SOC.sv:8.17-8.25"
+          }
+        },
+        "clk": {
+          "hide_name": 0,
+          "bits": [ 5 ],
+          "attributes": {
+            "src": "./soc/SOC.sv:11.11-11.14"
+          }
+        },
+        "cpu.ALUB": {
+          "hide_name": 0,
+          "bits": [ "0", "0", "x", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+          "attributes": {
+            "hdlname": "cpu ALUB",
+            "src": "./cpu/CPU.sv:165.24-165.28"
+          }
+        },
+        "cpu.ALUControlSignal": {
+          "hide_name": 0,
+          "bits": [ "x", "0", "0", "0" ],
+          "attributes": {
+            "hdlname": "cpu ALUControlSignal",
+            "src": "./cpu/CPU.sv:157.17-157.33"
           }
         },
         "cpu.Immediate": {
           "hide_name": 0,
-          "bits": [ "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "0", "0", "0", "0", "0", "0", "0" ],
+          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
           "attributes": {
             "hdlname": "cpu Immediate",
             "src": "./cpu/CPU.sv:77.18-77.27"
@@ -10047,7 +10186,7 @@
         },
         "cpu.InstructionRegister": {
           "hide_name": 0,
-          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "x", "0", "0", "0", "0", "0", "0", "0" ],
+          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
           "attributes": {
             "hdlname": "cpu InstructionRegister",
             "src": "./cpu/CPU.sv:22.22-22.41"
@@ -10391,7 +10530,7 @@
         },
         "cpu.TomemReadData": {
           "hide_name": 0,
-          "bits": [ "x", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
           "attributes": {
             "hdlname": "cpu TomemReadData",
             "src": "./cpu/CPU.sv:7.24-7.37"
@@ -10405,12 +10544,52 @@
             "src": "./cpu/CPU.sv:252.18-252.32"
           }
         },
+        "cpu.alu.ALUB": {
+          "hide_name": 0,
+          "bits": [ "0", "0", "x", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+          "attributes": {
+            "hdlname": "cpu alu ALUB",
+            "src": "./cpu/ALU.sv:2.30-2.34"
+          }
+        },
+        "cpu.alu.ALUControlSignal": {
+          "hide_name": 0,
+          "bits": [ "x", "0", "0", "0" ],
+          "attributes": {
+            "hdlname": "cpu alu ALUControlSignal",
+            "src": "./cpu/ALU.sv:3.23-3.39"
+          }
+        },
+        "cpu.alu.fiveBitImmediate": {
+          "hide_name": 0,
+          "bits": [ "0", "0", "x", "0", "0" ],
+          "attributes": {
+            "hdlname": "cpu alu fiveBitImmediate",
+            "src": "./cpu/ALU.sv:7.17-7.33"
+          }
+        },
         "cpu.byteMask": {
           "hide_name": 0,
-          "bits": [ "0", "0", "0", "1" ],
+          "bits": [ "x", "x", "x", "1" ],
           "attributes": {
             "hdlname": "cpu byteMask",
             "src": "./cpu/CPU.sv:11.24-11.32"
+          }
+        },
+        "cpu.controlUnit.ALUControlSignal": {
+          "hide_name": 0,
+          "bits": [ "x", "0", "0", "0" ],
+          "attributes": {
+            "hdlname": "cpu controlUnit ALUControlSignal",
+            "src": "./cpu/ControlUnit.sv:14.24-14.40"
+          }
+        },
+        "cpu.controlUnit.ALUControlUnit.ALUControlSignal": {
+          "hide_name": 0,
+          "bits": [ "x", "0", "0", "0" ],
+          "attributes": {
+            "hdlname": "cpu controlUnit ALUControlUnit ALUControlSignal",
+            "src": "./cpu/ControlUnit.sv:277.24-277.40"
           }
         },
         "cpu.controlUnit.ALUControlUnit.funct3": {
@@ -10482,8 +10661,7 @@
           "bits": [ 2 ],
           "attributes": {
             "hdlname": "cpu controlUnit reset",
-            "src": "./cpu/ControlUnit.sv:6.22-6.27",
-            "unused_bits": "0 "
+            "src": "./cpu/ControlUnit.sv:6.22-6.27"
           }
         },
         "cpu.funct3": {
@@ -10512,7 +10690,7 @@
         },
         "cpu.immIType": {
           "hide_name": 0,
-          "bits": [ "0", "0", "0", "0", "x", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
           "attributes": {
             "hdlname": "cpu immIType",
             "src": "./cpu/CPU.sv:79.18-79.26"
@@ -10520,7 +10698,7 @@
         },
         "cpu.immJType": {
           "hide_name": 0,
-          "bits": [ "0", "0", "0", "0", "x", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
+          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
           "attributes": {
             "hdlname": "cpu immJType",
             "src": "./cpu/CPU.sv:79.58-79.66"
@@ -10536,7 +10714,7 @@
         },
         "cpu.immUType": {
           "hide_name": 0,
-          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "x", "0", "0", "0", "0", "0", "0", "0" ],
+          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
           "attributes": {
             "hdlname": "cpu immUType",
             "src": "./cpu/CPU.sv:79.48-79.56"
@@ -10544,7 +10722,7 @@
         },
         "cpu.memReadData": {
           "hide_name": 0,
-          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "x", "0", "0", "0", "0", "0", "0", "0" ],
+          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
           "attributes": {
             "hdlname": "cpu memReadData",
             "src": "./cpu/CPU.sv:25.18-25.29"
@@ -10579,8 +10757,7 @@
           "bits": [ 2 ],
           "attributes": {
             "hdlname": "cpu reset",
-            "src": "./cpu/CPU.sv:9.17-9.22",
-            "unused_bits": "0 "
+            "src": "./cpu/CPU.sv:9.17-9.22"
           }
         },
         "cpu.rs1": {
@@ -10593,116 +10770,106 @@
         },
         "cpu.rs2": {
           "hide_name": 0,
-          "bits": [ "0", "0", "0", "0", "x" ],
+          "bits": [ "0", "0", "0", "0", "0" ],
           "attributes": {
             "hdlname": "cpu rs2",
             "src": "./cpu/CPU.sv:75.22-75.25"
-          }
-        },
-        "gpioReadData": {
-          "hide_name": 0,
-          "bits": [ "x" ],
-          "attributes": {
-            "src": "./soc/SOC.sv:58.22-58.34"
           }
         },
         "gpio_mmio.BASE_MEMORY": {
           "hide_name": 0,
           "bits": [ "x" ],
           "attributes": {
-            "src": "./soc/SOC.sv:80.43-80.64"
+            "src": "./soc/SOC.sv:98.43-98.64"
           }
         },
         "gpio_mmio.TOP_MEMORY": {
           "hide_name": 0,
           "bits": [ "x" ],
           "attributes": {
-            "src": "./soc/SOC.sv:80.89-80.109"
+            "src": "./soc/SOC.sv:98.89-98.109"
           }
         },
-        "led_mmio.byteMask": {
+        "gpio_mmio.byteMask": {
           "hide_name": 0,
-          "bits": [ "0", "0", "0", "1" ],
+          "bits": [ "x", "x", "x", "1" ],
           "attributes": {
-            "hdlname": "led_mmio byteMask",
+            "hdlname": "gpio_mmio byteMask",
             "src": "./soc/GPIO_MMIO.sv:9.25-9.33"
           }
         },
-        "led_mmio.ledg_n": {
+        "gpio_mmio.ledg_n": {
           "hide_name": 0,
           "bits": [ "0" ],
           "attributes": {
-            "hdlname": "led_mmio ledg_n",
+            "hdlname": "gpio_mmio ledg_n",
             "src": "./soc/GPIO_MMIO.sv:11.26-11.32"
           }
         },
-        "led_mmio.ledr_n": {
+        "gpio_mmio.ledr_n": {
           "hide_name": 0,
           "bits": [ "0" ],
           "attributes": {
-            "hdlname": "led_mmio ledr_n",
+            "hdlname": "gpio_mmio ledr_n",
             "src": "./soc/GPIO_MMIO.sv:11.18-11.24"
           }
         },
-        "led_mmio.memReadData": {
-          "hide_name": 0,
-          "bits": [ "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x" ],
-          "attributes": {
-            "hdlname": "led_mmio memReadData",
-            "src": "./soc/GPIO_MMIO.sv:10.25-10.36"
-          }
-        },
-        "led_mmio.memWriteData": {
+        "gpio_mmio.memWriteData": {
           "hide_name": 0,
           "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
           "attributes": {
-            "hdlname": "led_mmio memWriteData",
+            "hdlname": "gpio_mmio memWriteData",
             "src": "./soc/GPIO_MMIO.sv:7.25-7.37"
           }
         },
-        "led_mmio.ram0": {
+        "gpio_mmio.ram3": {
           "hide_name": 0,
-          "bits": [ "x", "x", "x", "x", "x", "x", "x", "x" ],
+          "bits": [ "0", "0", "x", "x", "x", "x", "x", "x" ],
           "attributes": {
-            "hdlname": "led_mmio ram0",
-            "src": "./soc/GPIO_MMIO.sv:16.17-16.21"
-          }
-        },
-        "led_mmio.ram3": {
-          "hide_name": 0,
-          "bits": [ "0", "0", "0", "0", "0", "0", "0", "0" ],
-          "attributes": {
-            "hdlname": "led_mmio ram3",
+            "hdlname": "gpio_mmio ram3",
             "src": "./soc/GPIO_MMIO.sv:19.17-19.21"
           }
         },
-        "led_mmio.readDataOut": {
+        "led_r2": {
           "hide_name": 0,
-          "bits": [ "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x" ],
+          "bits": [ 4 ],
           "attributes": {
-            "hdlname": "led_mmio readDataOut",
-            "src": "./soc/GPIO_MMIO.sv:27.18-27.29"
+            "src": "./soc/SOC.sv:4.34-4.40"
+          }
+        },
+        "led_r2_SB_DFFER_Q_D": {
+          "hide_name": 0,
+          "bits": [ 6 ],
+          "attributes": {
+          }
+        },
+        "led_r2_SB_DFFER_Q_E": {
+          "hide_name": 0,
+          "bits": [ 7 ],
+          "attributes": {
+            "defaultvalue": "1",
+            "src": "./soc/SOC.sv:25.5-35.8|/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/ff_map.v:14.63-14.116|/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/cells_sim.v:656.8-656.9"
           }
         },
         "ledg_n": {
           "hide_name": 0,
           "bits": [ "0" ],
           "attributes": {
-            "src": "./soc/SOC.sv:3.26-3.32"
+            "src": "./soc/SOC.sv:4.26-4.32"
           }
         },
         "ledr_n": {
           "hide_name": 0,
           "bits": [ "0" ],
           "attributes": {
-            "src": "./soc/SOC.sv:3.18-3.24"
+            "src": "./soc/SOC.sv:4.18-4.24"
           }
         },
         "memWriteData": {
           "hide_name": 0,
           "bits": [ "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0" ],
           "attributes": {
-            "src": "./soc/SOC.sv:6.45-6.57"
+            "src": "./soc/SOC.sv:7.45-7.57"
           }
         },
         "reset": {
@@ -10710,6 +10877,28 @@
           "bits": [ 2 ],
           "attributes": {
             "src": "./soc/SOC.sv:2.17-2.22"
+          }
+        },
+        "start": {
+          "hide_name": 0,
+          "bits": [ 3 ],
+          "attributes": {
+            "src": "./soc/SOC.sv:3.17-3.22"
+          }
+        },
+        "start_SB_DFFR_D_Q": {
+          "hide_name": 0,
+          "bits": [ 3, 8 ],
+          "attributes": {
+            "force_downto": "00000000000000000000000000000001",
+            "src": "/home/brandon/oss-cad-suite/lib/../share/yosys/ice40/cells_map.v:6.21-6.22"
+          }
+        },
+        "start_toggle": {
+          "hide_name": 0,
+          "bits": [ 4 ],
+          "attributes": {
+            "src": "./soc/SOC.sv:12.11-12.23"
           }
         }
       }

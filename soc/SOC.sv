@@ -1,32 +1,47 @@
 module SOC (
     input logic reset,
-    output logic ledr_n, ledg_n
+    input logic start,  // Add start signal
+    output logic ledr_n, ledg_n, led_r2
 );
     // BUS
     logic [31:0] TomemReadData, memAddress, memWriteData;
     logic [3:0] byteMask;
     logic memWrite;
 
-    logic clk;
+    logic clk, gated_clk;
+    logic start_toggle;
+    logic start_prev;
 
-    // Clock
-    SB_HFOSC OSC (
-        .CLKHFEN(1'b1),
-        .CLKHFPU(1'b1),
-        .CLKHF(clk)
+    // Clock generation
+    SB_LFOSC OSC (
+        .CLKLFPU(1'b1),
+        .CLKLFEN(1'b1),
+        .CLKLF(clk)
     );
-    defparam OSC.CLKHF_DIV = "0b11";
 
-    // Instantiate RAM
-    //RAM ram_inst (
-    //    .memAddress(memAddress),
-    //    .memWriteData(memWriteData),
-    //    .memWrite(memWrite),
-    //    .byteMask(byteMask),
-    //    .memReadData(memReadData),
-    //    .reset(reset),
-    //    .clk(clk)
-    //);
+    assign led_r2 = start_toggle;
+
+    // Toggle logic for start signal
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            start_toggle <= 0;
+            start_prev <= 0;
+        end else begin
+            if (start && !start_prev) begin
+                start_toggle <= ~start_toggle;
+            end
+            start_prev <= start;
+        end
+    end
+
+    // Gated clock logic
+    always_comb begin
+        if (start_toggle) begin
+            gated_clk = clk;
+        end else begin
+            gated_clk = 0;
+        end
+    end
 
     // Instantiate CPU
     CPU cpu (
@@ -36,21 +51,22 @@ module SOC (
         .byteMask(byteMask),
         .memWrite(memWrite),
         .reset(reset),
-        .clk(clk)
+        .clk(gated_clk)  // Use gated clock
     );
 
     // Memory decoder for the mmio.
     // 32'h0000_0000 - 32'h0000_01FF BRAM // Change to flash spi soon
     // 32'hFFFF_FFF0 - 32'hFFFF_FFF3 GPIO
+    // 32'hFFFF_FFF4 - 32'hFFFF_FFF7 UART
     BRAM_MMIO bram_mmio (
-        .clk(clk),
+        .clk(gated_clk),  // Use gated clock
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
-        .memReadData(bramReadData)
+        .memReadData(bramReadData), .byteMask(byteMask)
     );
-    GPIO_MMIO led_mmio (
-        .clk(clk),
+    GPIO_MMIO gpio_mmio (
+        .clk(gated_clk),  // Use gated clock
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
@@ -64,7 +80,7 @@ module SOC (
     // Since the data is only available in the next cycle but by then the address has changed
     // So we save the original address used to access the memory and use that to compare the data
     logic [31:0] delayedMemAddress;
-    always_ff @(posedge clk) begin
+    always_ff @(posedge gated_clk or posedge reset) begin
         if (reset) begin
             delayedMemAddress <= 32'h0000_0000;  // Reset condition
         end else begin
@@ -73,6 +89,8 @@ module SOC (
     end
 
     // Multiplexer for memReadData
+    logic [31:0] bramReadData, gpioReadData;
+
     always_comb begin
         // BRAM
         if (delayedMemAddress >= bram_mmio.BASE_MEMORY && delayedMemAddress <= bram_mmio.TOP_MEMORY) begin
