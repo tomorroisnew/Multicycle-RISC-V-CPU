@@ -7,6 +7,7 @@ _start:
 
     jal main                        # Jump to main function
     nop                             # No-op (optional)
+1:  j 1b
 
 main:
         addi    sp, sp, -16
@@ -15,19 +16,10 @@ main:
         addi    s0, sp, 16
         li      a0, 0
         sw      a0, -12(s0)
-        lw      a0, -16(zero)
-        bnez    a0, .LBB0_2
-        j       .LBB0_1
-.LBB0_1:
-        li      a0, -1
-        sw      a0, -16(zero)
-        j       .LBB0_3
-.LBB0_2:
-        li      a0, 0
-        sw      a0, -16(zero)
-        j       .LBB0_3
-.LBB0_3:
-        li      a0, 0
+        li      a1, 65
+        sb      a1, -11(zero)
+        li      a1, 255
+        sb      a1, -12(zero)
         lw      ra, 12(sp)
         lw      s0, 8(sp)
         addi    sp, sp, 16

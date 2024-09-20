@@ -7,6 +7,7 @@ module test_SOC;
 
     // Outputs
     logic red_led, green_led, led4grn, led3grn, led5grn, led_1red;
+    logic uart_tx, uart_rx;
 
     // Waveform dump
     initial begin
@@ -30,7 +31,7 @@ module test_SOC;
 
     // BUS
     logic [31:0] TomemReadData, memAddress, memWriteData;
-    logic [31:0] bramReadData, gpioReadData;
+    logic [31:0] bramReadData, gpioReadData, uartReadData;
     logic [3:0] byteMask;
     logic memWrite;
 
@@ -69,7 +70,7 @@ module test_SOC;
     // Monitor outputs
     initial begin
         //$monitor("At time %t, reset = %0b, ledr_n = %0b, ledg_n = %0b", $time, reset, ledr_n, ledg_n);
-        $monitor("At time %t, ledr_n = %0b, reset = %0b", $time, led4grn, reset);
+        $monitor("At time %t, reset = %0b", $time, reset);
     end
 
     // Waveform dump
@@ -122,6 +123,19 @@ module test_SOC;
         .memReadData(gpioReadData),
         .led1(led_1red), .led3(led4grn), .led4(led3grn), .led5(led5grn)
     );
+    UART_MMIO # (
+        .BASE_MEMORY(32'hFFFF_FFF4),
+        .TOP_MEMORY(32'hFFFF_FFF7)
+    ) uart_mmio (
+        .clk(slowed_clk),  // Use gated clock
+        .reset(reset),
+        .memAddress(memAddress),
+        .memWriteData(memWriteData),
+        .memWrite(memWrite),
+        .byteMask(byteMask),
+        .memReadData(uartReadData),
+        .uart_tx(uart_tx), .uart_rx(uart_rx)
+    );
 
     // Introduce a 1-cycle delay for the memory address since one memory access is its own state
     // Memory accesses are sequential, but we compare the address combinational, so it result in a mismatch
@@ -143,6 +157,8 @@ module test_SOC;
             TomemReadData = bramReadData;
         end else if (delayedMemAddress >= gpio_mmio.BASE_MEMORY && delayedMemAddress <= gpio_mmio.TOP_MEMORY) begin
             TomemReadData = gpioReadData;
+        end else if (delayedMemAddress >= uart_mmio.BASE_MEMORY && delayedMemAddress <= uart_mmio.TOP_MEMORY) begin
+            TomemReadData = uartReadData;
         end else begin
             TomemReadData = 32'h0000_0000;
         end

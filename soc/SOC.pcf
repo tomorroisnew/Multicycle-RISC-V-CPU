@@ -11,3 +11,6 @@ set_io led_1red     26
 set_io reset 20
 set_io start 19
 
+# UART
+set_io uart_tx      9
+set_io uart_rx      6
