@@ -29,6 +29,6 @@ int main() {
     test();
     *(volatile int*)0xFFFFFFF0 = 0xCCCCCCCC;
     delay();
-# 53 "test.c"
+# 54 "test.c"
     return 0;
 }

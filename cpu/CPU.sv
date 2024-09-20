@@ -422,37 +422,57 @@ module REGDATA (
 );
 
     // 4 bytes of the registers. I seperated them so that it get invoked as bram
-    logic [7:0] data0 [0:31];
-    logic [7:0] data1 [0:31];
-    logic [7:0] data2 [0:31];
-    logic [7:0] data3 [0:31];
+    logic [7:0] data0 [0:511];
+    logic [7:0] data1 [0:511];
+    logic [7:0] data2 [0:511];
+    logic [7:0] data3 [0:511];
+
+    // logic [31:0] outputData;
+
+    // assign RegFileData = outputData;
+
+    // always_ff @(posedge clk or posedge reset) begin
+    //     if (reset) begin
+    //         for (int i = 0; i < 32; i++) begin
+    //             //data0[i] <= 8'b0;
+    //             //data1[i] <= 8'b0;
+    //             //data2[i] <= 8'b0;
+    //             //data3[i] <= 8'b0;
+    //         end
+    //         outputData <= 32'b0;
+    //     end else begin
+    //         if (RegWrite) begin
+    //             data0[rd] <= RegWriteData[7:0];
+    //             data1[rd] <= RegWriteData[15:8];
+    //             data2[rd] <= RegWriteData[23:16];
+    //             data3[rd] <= RegWriteData[31:24];
+    //         end
+    //         if (rs == 5'b0) begin
+    //             outputData <= 32'b0;
+    //         end else begin
+    //             outputData[7:0]   <= data0[rs];
+    //             outputData[15:8]  <= data1[rs];
+    //             outputData[23:16] <= data2[rs];
+    //             outputData[31:24] <= data3[rs];
+    //         end
+    //     end
+    // end
 
     logic [31:0] outputData;
+    assign RegFileData = (rs == 5'b0) ? 32'b0 : outputData;
 
-    assign RegFileData = outputData;
-
-    always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
-            for (int i = 0; i < 32; i++) begin
-                data0[i] <= 8'b0;
-                data1[i] <= 8'b0;
-                data2[i] <= 8'b0;
-                data3[i] <= 8'b0;
-                outputData <= 32'b0;
-            end
-        end else begin
-            if (RegWrite) begin
-                data0[rd] <= RegWriteData[7:0];
-                data1[rd] <= RegWriteData[15:8];
-                data2[rd] <= RegWriteData[23:16];
-                data3[rd] <= RegWriteData[31:24];
-            end
-            if (rs == 5'b0) begin
-                outputData = 32'b0;
-            end else begin
-                outputData = {data3[rs], data2[rs], data1[rs], data0[rs]};
-            end
+    // Combined sequential write and read
+    always_ff @(posedge clk) begin
+        if (RegWrite) begin
+            data0[rd] <= RegWriteData[7:0];
+            data1[rd] <= RegWriteData[15:8];
+            data2[rd] <= RegWriteData[23:16];
+            data3[rd] <= RegWriteData[31:24];
         end
-    end
+        outputData[7:0]   <= data0[rs];
+        outputData[15:8]  <= data1[rs];
+        outputData[23:16] <= data2[rs];
+        outputData[31:24] <= data3[rs];
+    end    
 
 endmodule

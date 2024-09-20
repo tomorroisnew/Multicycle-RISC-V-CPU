@@ -37,6 +37,7 @@ int main() {
     //transmit_uart('l');
     //transmit_uart('d');
     //transmit_uart('\n');
+    //transmit_uart('\r');
     //*(volatile char *)0xFFFFFFF0 = 0xAA;
     //*(volatile char *)0xFFFFFFF1 = 0xBB;
     //*(volatile char *)0xFFFFFFF2 = 0xCC;
