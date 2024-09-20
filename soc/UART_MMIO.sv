@@ -1,7 +1,7 @@
 module UART_MMIO #(
     parameter logic [31:0] BASE_MEMORY = 32'hFFFF_FFF4,
     parameter logic [31:0] TOP_MEMORY  = 32'hFFFF_FFF7, // 2048 bytes
-    parameter int BAUD_DIVIDER = 3 // Example divider for 9600 baud rate with a 1 MHz clock
+    parameter int BAUD_DIVIDER = 1200 // Example divider for 9600 baud rate with a 1 MHz clock
 ) (
     input  logic        clk,
     input  logic        reset,         // Added reset input
@@ -53,36 +53,44 @@ module UART_MMIO #(
             //// UART STUFF ////
             // Also update control back to zero, after starting transmitting
             // We can only update it again if idle, while not, keep on making it 0
-            if (current_state != IDLE) begin
-                control <= 8'b00000000;
+            if (current_state == STOP && control[0]) begin
+                control <= 8'b00000000;  // Only clear the start bit after sending data
             end
+
             // Update status. tx_busy if not idle
-            if (current_state == IDLE) begin
-                status <= 8'b00000000; // tx_busy
+            if (current_state != IDLE || control[0]) begin
+                status <= 8'b11111111; // busy/starting to transmit
             end else begin
-                status <= 8'b11111111; // tx_busy
+                status <= 8'b00000000; // tx_busy
             end
+            //if (current_state == STOP && control[0]) begin
+            //    control[0] <= 1'b0;  // Only clear the start bit after sending data
+            //end
         end
     end
 
 ////////////////////////////////////////////// UART STUFF ///////////////////////////////////////////////
     // Clock divider
-    logic [15:0] clk_div_counter;
     logic baud_clk;
 
-    always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
-            clk_div_counter <= 0;
-            baud_clk <= 0;
-        end else begin
-            if (clk_div_counter == BAUD_DIVIDER - 1) begin
-                clk_div_counter <= 0;
-                baud_clk <= ~baud_clk;
-            end else begin
-                clk_div_counter <= clk_div_counter + 1;
-            end
-        end
-    end
+    //baud_rate_divider #(
+    //    .SYSTEM_CLOCK_FREQ(6000000),  // 1 MHz
+    //    .BAUD_RATE(1200)                // 9600 baud
+    //) baud_rate_divider_inst (
+    //    .clk(clk),
+    //    .rst(reset),
+    //    .baud_clk(baud_clk)
+    //);
+
+    // Instantiate baud rate generator with corrected parameters
+    baud_rate_generator #(
+        .SYS_CLK_FREQ(6000000), // For simulation: 10 Hz system clock
+        .BAUD_RATE(1200)     // For simulation: 10 baud rate
+    ) baud_gen (
+        .clk(clk),         // Connect to the system clock
+        .reset(reset),
+        .baud_clk(baud_clk)
+    );
 
     // Transmitter
     // States
@@ -102,13 +110,20 @@ module UART_MMIO #(
 
     state_t current_state, next_state;
 
-    //// Update State Registers
-    //always_ff @(posedge clk or posedge reset) begin
-    //    // Update status. tx_busy if not idle
-    //    if (current_state == IDLE) begin
-    //        status <= 8'b00000000; // tx_busy
+    // Update State Registers
+    //always_ff @(posedge baud_clk or posedge reset) begin
+    //    if (reset) begin
+    //        status <= 8'b00000000; // Reset status
     //    end else begin
-    //        status <= 8'b11111111; // tx_busy
+    //        // Update status. tx_busy if not idle
+    //        if (current_state == IDLE) begin
+    //            status <= 8'b00000000; // tx_busy
+    //        end else begin
+    //            status <= 8'b11111111; // tx_busy
+    //        end
+    //        //if (current_state == STOP && control[0]) begin
+    //        //    control[0] <= 1'b0;  // Only clear the start bit after sending data
+    //        //end
     //    end
     //end
 
@@ -148,7 +163,8 @@ module UART_MMIO #(
 
     // Output logic
     logic first_bit, second_bit, third_bit, fourth_bit, fifth_bit, sixth_bit, seventh_bit, eighth_bit; // For the simulator
-    assign {first_bit, second_bit, third_bit, fourth_bit, fifth_bit, sixth_bit, seventh_bit, eighth_bit} = writeData;
+    // LSB first
+    assign {eighth_bit, seventh_bit, sixth_bit, fifth_bit, fourth_bit, third_bit, second_bit, first_bit} = writeData;
     always_comb begin
         case (current_state)
             IDLE: uart_tx = 1'b1;
@@ -166,4 +182,71 @@ module UART_MMIO #(
         endcase
     end
     
+endmodule
+
+module baud_rate_divider #(
+    parameter SYSTEM_CLOCK_FREQ = 6000000,    // System clock frequency: 6 MHz
+    parameter BAUD_RATE = 1200                // Updated baud rate to 1200
+)(
+    input wire clk,        // System clock
+    input wire rst,        // Reset signal
+    output reg baud_clk    // Baud rate clock output
+);
+
+    // Calculate the number of system clock cycles needed to generate the baud rate
+    localparam integer DIVISOR = SYSTEM_CLOCK_FREQ / (BAUD_RATE * 16);  // 16x oversampling
+    
+    reg [31:0] counter = 0;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            counter <= 0;
+            baud_clk <= 0;
+        end else if (counter >= DIVISOR - 1) begin
+            counter <= 0;
+            baud_clk <= ~baud_clk;  // Toggle the baud clock
+        end else begin
+            counter <= counter + 1;
+        end
+    end
+
+endmodule
+
+// Corrected baud_rate_generator Module
+module baud_rate_generator #(
+    parameter SYS_CLK_FREQ = 6000000, // System clock frequency in Hz (for simulation)
+    parameter BAUD_RATE    = 1200  // Desired baud rate (for simulation)
+)(
+    input wire clk,            // System clock input
+    input wire reset,          // Asynchronous reset
+    output reg baud_clk        // Baud rate clock output
+);
+
+    // Calculate the number of system clock cycles per baud period
+    localparam integer COUNT_MAX = SYS_CLK_FREQ / BAUD_RATE; // 10 / 10 = 1
+
+    // Calculate the number of bits needed for the counter, ensuring at least 1 bit
+    localparam integer COUNT_BITS = ($clog2(COUNT_MAX) > 0) ? $clog2(COUNT_MAX) : 1;
+
+    // Counter to divide the system clock
+    reg [COUNT_BITS-1:0] counter;
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            counter   <= 0;
+            baud_clk  <= 0;
+        end else begin
+            if (COUNT_MAX > 1) begin
+                if (counter >= (COUNT_MAX / 2 - 1)) begin
+                    counter  <= 0;
+                    baud_clk <= ~baud_clk; // Toggle baud clock
+                end else begin
+                    counter <= counter + 1;
+                end
+            end else begin
+                baud_clk <= ~baud_clk; // Toggle every clock cycle
+            end
+        end
+    end
+
 endmodule

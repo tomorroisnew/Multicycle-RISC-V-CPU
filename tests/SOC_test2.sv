@@ -38,7 +38,7 @@ module test_SOC;
     // Clock generation
     initial begin
         clk = 0;
-        repeat (1000000) begin
+        repeat (600000) begin
             #5 clk = ~clk;  // Generate clock signal with period 10 time units
         end
     end
@@ -79,14 +79,14 @@ module test_SOC;
         $dumpvars(0, test_SOC);
     end
 
-    Clockworks #(
-        .SLOW(5) // Divide clock frequency by 2^10
-    ) CW (
-        .CLK(clk),
-        .RESET(reset),
-        .clk(slowed_clk),
-        .resetn(resetn)
-    );
+    //Clockworks #(
+    //    .SLOW(5) // Divide clock frequency by 2^10
+    //) CW (
+    //    .CLK(clk),
+    //    .RESET(reset),
+    //    .clk(slowed_clk),
+    //    .resetn(resetn)
+    //);
 
 
     // Instantiate CPU
@@ -97,14 +97,14 @@ module test_SOC;
         .byteMask(byteMask),
         .memWrite(memWrite),
         .reset(reset),
-        .clk(slowed_clk)  // Use gated clock
+        .clk(clk)  // Use gated clock
     );
 
     // Memory decoder for the mmio.
     // 32'h0000_0000 - 32'h0000_07ff BRAM // Change to flash spi soon
     // 32'hFFFF_FFF0 - 32'hFFFF_FFF3 GPIO
     BRAM_MMIO bram_mmio (
-        .clk(slowed_clk),  // Use gated clock
+        .clk(clk),  // Use gated clock
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
@@ -114,7 +114,7 @@ module test_SOC;
         .BASE_MEMORY(32'hFFFF_FFF0),
         .TOP_MEMORY(32'hFFFF_FFF3)
     ) gpio_mmio (
-        .clk(slowed_clk),  // Use gated clock
+        .clk(clk),  // Use gated clock
         .reset(reset),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
@@ -127,7 +127,7 @@ module test_SOC;
         .BASE_MEMORY(32'hFFFF_FFF4),
         .TOP_MEMORY(32'hFFFF_FFF7)
     ) uart_mmio (
-        .clk(slowed_clk),  // Use gated clock
+        .clk(clk),  // Use gated clock
         .reset(reset),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
@@ -137,12 +137,14 @@ module test_SOC;
         .uart_tx(uart_tx), .uart_rx(uart_rx)
     );
 
+    //defparam uart_mmio.CLKHF_DIV = "0b11";
+
     // Introduce a 1-cycle delay for the memory address since one memory access is its own state
     // Memory accesses are sequential, but we compare the address combinational, so it result in a mismatch
     // Since the data is only available in the next cycle but by then the address has changed
     // So we save the original address used to access the memory and use that to compare the data
     logic [31:0] delayedMemAddress;
-    always_ff @(posedge slowed_clk or posedge reset) begin
+    always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             delayedMemAddress <= 32'h0000_0000;  // Reset condition
         end else begin

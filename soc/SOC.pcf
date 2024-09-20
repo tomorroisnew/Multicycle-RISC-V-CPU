@@ -8,8 +8,8 @@ set_io led5grn      21
 set_io led_1red     26
 
 # Buttons
-set_io reset 20
-set_io start 19
+set_io reset 19
+set_io start 20
 
 # UART
 set_io uart_tx      9

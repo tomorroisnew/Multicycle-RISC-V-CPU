@@ -293,10 +293,55 @@ module CPU (
 
     // Reimplement the byte select, could use a refactor, but for reading, we should do some extensions either as signed or unsigned
     logic [31:0] LBData, LHData, LBUData, LHUData; // icarus doesnt like this inside the always comb
-    assign LBData = {{24{memReadData[7]}}, memReadData[7:0]};
-    assign LHData = {{16{memReadData[15]}}, memReadData[15:0]};
-    assign LBUData = {24'b0, memReadData[7:0]};
-    assign LHUData = {16'b0, memReadData[15:0]};
+    logic [7:0] firstbyte, secondbyte, thirdbyte, fourthbyte;
+    logic [15:0] firsthalfword, secondhalfword;
+    logic [1:0] readspecificByte;
+
+    logic [31:0] delayedMemAddress; // Since reading also take a cycle
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            delayedMemAddress <= 31'b0;
+        end else begin
+            delayedMemAddress <= memAddress;
+        end
+    end
+
+    assign readspecificByte = delayedMemAddress[1:0];
+    assign {fourthbyte, thirdbyte, secondbyte, firstbyte} = memReadData;
+    assign {secondhalfword, firsthalfword} = memReadData;
+
+    logic [7:0] bytes;
+    logic [15:0] halfword;
+
+    always_comb begin
+        case (readspecificByte)
+            2'b00: begin
+                bytes = firstbyte;
+                halfword = firsthalfword;
+            end
+            2'b01: begin
+                bytes = secondbyte;
+                halfword = 16'b0; // Ensure halfword is assigned
+            end
+            2'b10: begin
+                bytes = thirdbyte;
+                halfword = secondhalfword;
+            end
+            2'b11: begin
+                bytes = fourthbyte;
+                halfword = 16'b0; // Ensure halfword is assigned
+            end
+            default: begin
+                bytes = 8'b0;
+                halfword = 16'b0;
+            end
+        endcase
+    end
+
+    assign LBData = {{24{bytes[7]}}, bytes};
+    assign LHData = {{16{halfword[15]}}, halfword};
+    assign LBUData = {24'b0, bytes};
+    assign LHUData = {16'b0, halfword};
     always_comb begin
         case (funct3)
             3'b000: ToMemoryDataRegister = LBData; // LB/SB

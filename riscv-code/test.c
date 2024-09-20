@@ -1,49 +1,37 @@
 #define LED_ADDR 0xFFFFFFF0  // Define a memory-mapped I/O address
 
-//void delay() {
-//    for (volatile int i = 0; i < 2; i++);  // Simple delay loop
-//}
-
-//void delay() {
-//    for (volatile int i = 0; i < 10000; i++);  // Simple delay loop
-//}
-void delay() {
-    *(volatile int *)LED_ADDR = 0xFFFFFFFF;  // Simple delay loop
-}
-//
-void gitna() {
-    *(volatile int *)LED_ADDR = *(volatile int *)LED_ADDR + 1;
-    //gitna();
-    *(volatile int *)LED_ADDR = 0xEEEEEEEE;  // Simple delay loop
-    delay();
-    *(volatile int *)LED_ADDR = 0xDEDEDEDE;  // Simple delay loop
-}
-
-void main() {
-    //volatile int *led = (volatile int *)LED_ADDR;  // Create a pointer to the LED address
-    //for (int i = 0; i < 2; i++) {
-    //    *(volatile int *)LED_ADDR = 0x00000000;  // Turn on the LED
-    //    *(volatile int *)LED_ADDR = 0xFFFFFFFF;  // Turn off the LED
-    //}
-    //*(volatile uint32_t *)(LED_ADDR & ~0x3) = (*(volatile uint32_t *)(LED_ADDR & ~0x3) & ~(0xFF << (BYTE_OFFSET * 8))) | (0xFF << (BYTE_OFFSET * 8));
-    //*(volatile int *)LED_ADDR = 0xFFFFFFFF;
-    //if(*(volatile int *)LED_ADDR == 0xFFFFFFFF) {
-    //    *led = 0xEEEEEEEE;
-    //}
-    //else {
-    //    *(volatile int *)LED_ADDR = 0xDEDEDEDE;
-    //}
-    while(1) {
-        //*(volatile int *)LED_ADDR = 0x00000000;
-        //*(volatile short *)(LED_ADDR+2)  = 0xFFFF;
-        //*(volatile char *)(LED_ADDR+1) = 0xDE;
-        //*(volatile char *)LED_ADDR;
-        *(volatile int *)LED_ADDR = 0xDDDDDDDD;
-        gitna();
-        *(volatile int *)LED_ADDR = 0xAAAAAAAA;
-        delay();
-        *(volatile int *)LED_ADDR = 0x55555555;
-        gitna();
-    }
+void transmit_uart(char c) {
+    while (*(volatile char *)0xFFFFFFF7 != 0x00){}; // Wait for the status register to be 0x00 which indicate idle
+    *(volatile char *)0xFFFFFFF5 = c; //data
+    *(volatile char *)0xFFFFFFF4 = 0xFF; //control
     return;
+}
+
+int main() {
+    transmit_uart('H');
+    transmit_uart('e');
+    transmit_uart('l');
+    transmit_uart('l');
+    transmit_uart('o');
+    transmit_uart(' ');
+    transmit_uart('W');
+    transmit_uart('o');
+    transmit_uart('r');
+    transmit_uart('l');
+    transmit_uart('d');
+    transmit_uart('\n');
+    //*(volatile char *)0xFFFFFFF0 = 0xAA;
+    //*(volatile char *)0xFFFFFFF1 = 0xBB;
+    //*(volatile char *)0xFFFFFFF2 = 0xCC;
+    //*(volatile char *)0xFFFFFFF3 = 0xDD;
+    //*(volatile char *)0x00000501 = 0xFF;
+    //while (*(volatile char *)0x00000501 != 0x00){*(volatile char *)0x00000501 -= 1;};
+    //*(volatile char *)0x00000501 = 0xFF;
+    //*(volatile char *)0xFFFFFFF1;
+    //*(volatile char *)0xFFFFFFF5 = 'H'; //data
+    //*(volatile char *)0xFFFFFFF4 = 0xFF; //control
+    //while (*(volatile char *)0xFFFFFFF7 != 0x00){} //wait
+    //*(volatile char *)0xFFFFFFF5 = 'E'; //data
+    //*(volatile char *)0xFFFFFFF4 = 0xFF; //control
+    return 0;
 }

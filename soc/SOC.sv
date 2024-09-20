@@ -19,22 +19,23 @@ module SOC (
     logic start_prev;
 
     // Clock generation
-    SB_LFOSC OSC (
-        .CLKLFPU(1'b1),
-        .CLKLFEN(1'b1),
-        .CLKLF(clk)
+    SB_HFOSC OSC (
+        .CLKHFPU(1'b1),
+        .CLKHFEN(1'b1),
+        .CLKHF(clk)
     );
+    defparam OSC.CLKHF_DIV = "0b11";
 
-    Clockworks #(
-        .SLOW(4) // Divide clock frequency by 2^10
-    ) CW (
-        .CLK(clk),
-        .RESET(reset),
-        .clk(slowed_clk),
-        .resetn(resetn)
-    );
+    //Clockworks #(
+    //    .SLOW(10) // Divide clock frequency by 2^10
+    //) CW (
+    //    .CLK(clk),
+    //    .RESET(reset),
+    //    .clk(slowed_clk),
+    //    .resetn(resetn)
+    //);
 
-    assign red_led = ~slowed_clk;
+    //assign red_led = ~slowed_clk;
 
 
     // Instantiate CPU
@@ -45,7 +46,7 @@ module SOC (
         .byteMask(byteMask),
         .memWrite(memWrite),
         .reset(reset),
-        .clk(slowed_clk)  // Use gated clock
+        .clk(clk)  // Use gated clock
     );
 
     // Memory decoder for the mmio.
@@ -55,7 +56,7 @@ module SOC (
         .BASE_MEMORY(32'h0000_0000),
         .TOP_MEMORY(32'h0000_07ff)
     ) bram_mmio (
-        .clk(slowed_clk),  // Use gated clock
+        .clk(clk),  // Use gated clock
         .memAddress(memAddress),
         .memWriteData(memWriteData),
         .memWrite(memWrite),
@@ -65,7 +66,7 @@ module SOC (
         .BASE_MEMORY(32'hFFFF_FFF0),
         .TOP_MEMORY(32'hFFFF_FFF3)
     ) gpio_mmio (
-        .clk(slowed_clk),  // Use gated clock
+        .clk(clk),  // Use gated clock
         .reset(reset),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
@@ -77,9 +78,9 @@ module SOC (
     UART_MMIO # (
         .BASE_MEMORY(32'hFFFF_FFF4),
         .TOP_MEMORY(32'hFFFF_FFF7),
-        .BAUD_DIVIDER(3)
+        .BAUD_DIVIDER(9600)
     ) uart_mmio (
-        .clk(slowed_clk),  // Use gated clock
+        .clk(clk),  // Use gated clock
         .reset(reset),
         .memAddress(memAddress),
         .memWriteData(memWriteData),
@@ -94,7 +95,7 @@ module SOC (
     // Since the data is only available in the next cycle but by then the address has changed
     // So we save the original address used to access the memory and use that to compare the data
     logic [31:0] delayedMemAddress;
-    always_ff @(posedge slowed_clk or posedge reset) begin
+    always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             delayedMemAddress <= 32'h0000_0000;  // Reset condition
         end else begin
@@ -119,22 +120,22 @@ module SOC (
 endmodule
 
 
-module Clockworks 
-(
-   input  CLK,   // clock pin of the board
-   input  RESET, // reset pin of the board
-   output clk,   // (optionally divided) clock for the design.
-   output resetn // (optionally timed) negative reset for the design (more on this later)
-);
-   parameter SLOW = 4;
-   reg [SLOW:0] slow_CLK = 0;
-   always @(posedge CLK or posedge RESET) begin
-      if (RESET) begin
-         slow_CLK <= 0;
-      end else begin
-         slow_CLK <= slow_CLK + 1;
-      end
-   end
-   assign clk = slow_CLK[SLOW];
-   assign resetn = ~RESET;
-endmodule
+//module Clockworks 
+//(
+//   input  CLK,   // clock pin of the board
+//   input  RESET, // reset pin of the board
+//   output clk,   // (optionally divided) clock for the design.
+//   output resetn // (optionally timed) negative reset for the design (more on this later)
+//);
+//   parameter SLOW = 10;
+//   reg [SLOW:0] slow_CLK = 0;
+//   always @(posedge CLK or posedge RESET) begin
+//      if (RESET) begin
+//         slow_CLK <= 0;
+//      end else begin
+//         slow_CLK <= slow_CLK + 1;
+//      end
+//   end
+//   assign clk = slow_CLK[SLOW];
+//   assign resetn = ~RESET;
+//endmodule
