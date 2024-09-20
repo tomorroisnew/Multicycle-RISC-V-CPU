@@ -11,19 +11,24 @@ void transmit_uart(char c) {
     return;
 }
 
+void test(){
+    *(volatile int*)0xFFFFFFF0 = 0xFFFFFFFF;
+}
+
+void delay() {
+    *(volatile int*)0xFFFFFFF0 = 0xEEEEEEEE;
+    test();
+    *(volatile int*)0xFFFFFFF0 = 0xDDDDDDDD;
+}
+
 int main() {
-    transmit_uart('H');
-    transmit_uart('e');
-    transmit_uart('l');
-    transmit_uart('l');
-    transmit_uart('o');
-    transmit_uart(' ');
-    transmit_uart('W');
-    transmit_uart('o');
-    transmit_uart('r');
-    transmit_uart('l');
-    transmit_uart('d');
-    transmit_uart('\n');
-# 36 "test.c"
+    *(volatile int*)0xFFFFFFF0 = 0xAAAAAAAA;
+    test();
+    *(volatile int*)0xFFFFFFF0 = 0xBBBBBBBB;
+    delay();
+    test();
+    *(volatile int*)0xFFFFFFF0 = 0xCCCCCCCC;
+    delay();
+# 53 "test.c"
     return 0;
 }

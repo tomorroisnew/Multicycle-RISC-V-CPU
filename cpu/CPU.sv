@@ -57,14 +57,25 @@ module CPU (
 
     // Registers
     logic [31:0] REGA, REGB;
-    logic [31:0] RegFile [0:31];
+    
+    REGFILE regfile (
+        .rs1(rs1),
+        .rs2(rs2),
+        .rd(rd),
+        .reset(reset),
+        .clk(clk),
+        .RegWrite(RegWrite),
+        .RegWriteData(Result),
+        .RegFileDataA(REGA),
+        .RegFileDataB(REGB)
+    );
 
     // Initialize the register file to 0
-    initial begin
-        for (int i = 0; i < 32; i++) begin
-            RegFile[i] = 32'b0;
-        end
-    end
+    //initial begin
+    //    for (int i = 0; i < 32; i++) begin
+    //        RegFile[i] = 32'b0;
+    //    end
+    //end
 
     // Combinational Wires as input to the Control Unit
     logic [6:0] opcode;
@@ -78,16 +89,16 @@ module CPU (
     // Immediate Types for the multiplexer, Icarus Verilog Doesnt like assiging them in an always comb
     logic [31:0] immIType, immSType, immBType, immUType, immJType;
 
-    // Update the registers
-    always_ff @( posedge clk or posedge reset ) begin
-        if (reset) begin
-            REGA <= 32'b0;
-            REGB <= 32'b0;
-        end else begin
-            REGA <= RegFileDataA;
-            REGB <= RegFileDataB;
-        end
-    end
+    //// Update the registers
+    //always_ff @( posedge clk or posedge reset ) begin
+    //    if (reset) begin
+    //        REGA <= 32'b0;
+    //        REGB <= 32'b0;
+    //    end else begin
+    //        REGA <= RegFileDataA;
+    //        REGB <= RegFileDataB;
+    //    end
+    //end
 
     // Combinational Logic in between
     // Extract part of the Instruction Registers
@@ -118,8 +129,8 @@ module CPU (
     end
 
     // Combinational logic and wiring connections
-    assign RegFileDataA = (rs1 == 5'b0) ? 32'b0 : RegFile[rs1];
-    assign RegFileDataB = (rs2 == 5'b0) ? 32'b0 : RegFile[rs2];
+    //assign RegFileDataA = (rs1 == 5'b0) ? 32'b0 : RegFile[rs1];
+    //assign RegFileDataB = (rs2 == 5'b0) ? 32'b0 : RegFile[rs2];
 
     // Control Unit
     ControlUnit controlUnit (
@@ -359,15 +370,87 @@ module CPU (
     // Combinational Wires for signals. 
     logic RegWrite; 
 
-    // Update the registers / Register file in this instance
-    always_ff @( posedge clk or posedge reset ) begin
+    //// Update the registers / Register file in this instance
+    //always_ff @( posedge clk or posedge reset ) begin
+    //    if (reset) begin
+    //        for (int i = 0; i < 32; i++) begin
+    //            RegFile[i] <= 32'b0;
+    //        end
+    //    end else begin
+    //        if (RegWrite) begin
+    //            RegFile[rd] <= Result;
+    //        end
+    //    end
+    //end
+
+endmodule
+
+module REGFILE (
+    input logic [4:0] rs1, rs2, rd,
+    input logic reset, clk, RegWrite, 
+    input logic [31:0] RegWriteData,
+    output logic [31:0] RegFileDataA, RegFileDataB
+);
+    // Make two copy of REGDATA for the two read ports
+    REGDATA regdata1 (
+        .rs(rs1),
+        .rd(rd),
+        .reset(reset),
+        .clk(clk),
+        .RegWrite(RegWrite),
+        .RegWriteData(RegWriteData),
+        .RegFileData(RegFileDataA)
+    );
+
+    REGDATA regdata2 (
+        .rs(rs2),
+        .rd(rd),
+        .reset(reset),
+        .clk(clk),
+        .RegWrite(RegWrite),
+        .RegWriteData(RegWriteData),
+        .RegFileData(RegFileDataB)
+    );
+
+endmodule
+
+module REGDATA (
+    input logic [4:0] rs, rd, 
+    input logic reset, clk, RegWrite,
+    input logic [31:0] RegWriteData,
+    output logic [31:0] RegFileData
+);
+
+    // 4 bytes of the registers. I seperated them so that it get invoked as bram
+    logic [7:0] data0 [0:31];
+    logic [7:0] data1 [0:31];
+    logic [7:0] data2 [0:31];
+    logic [7:0] data3 [0:31];
+
+    logic [31:0] outputData;
+
+    assign RegFileData = outputData;
+
+    always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             for (int i = 0; i < 32; i++) begin
-                RegFile[i] <= 32'b0;
+                data0[i] <= 8'b0;
+                data1[i] <= 8'b0;
+                data2[i] <= 8'b0;
+                data3[i] <= 8'b0;
+                outputData <= 32'b0;
             end
         end else begin
             if (RegWrite) begin
-                RegFile[rd] <= Result;
+                data0[rd] <= RegWriteData[7:0];
+                data1[rd] <= RegWriteData[15:8];
+                data2[rd] <= RegWriteData[23:16];
+                data3[rd] <= RegWriteData[31:24];
+            end
+            if (rs == 5'b0) begin
+                outputData = 32'b0;
+            end else begin
+                outputData = {data3[rs], data2[rs], data1[rs], data0[rs]};
             end
         end
     end

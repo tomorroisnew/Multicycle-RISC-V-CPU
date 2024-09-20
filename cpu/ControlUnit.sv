@@ -56,7 +56,9 @@ module ControlUnit (
         // Apparantely, memory read is sequential, so i need a state just to read from memory
         MEMORY_FETCH_WAIT = 5'b01111,
         // SW/LW
-        MEMORY_LW_WAIT = 5'b10000
+        MEMORY_LW_WAIT = 5'b10000,
+        // Decoder Wait
+        DECODER_WAIT = 5'b10010
     } state_t;
 
     state_t current_state, next_state;
@@ -73,8 +75,9 @@ module ControlUnit (
     always_comb begin
         case (current_state)
             FETCH:                          next_state = MEMORY_FETCH_WAIT;
-            MEMORY_FETCH_WAIT:                next_state = DECODE; // For simulation
+            MEMORY_FETCH_WAIT:                next_state = DECODER_WAIT; // For simulation
             //MEMORY_WAIT:                    next_state = (opcode == 7'b0000011) ? LW_WRITEBACK : DECODE; // For synthesizing
+            DECODER_WAIT:                   next_state = DECODE; // Just add a delay for fetching the registers
             DECODE: begin
                 case (opcode)
                     7'b0110011:             next_state = RTYPE_EXECUTION;

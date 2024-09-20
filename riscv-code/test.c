@@ -7,19 +7,36 @@ void transmit_uart(char c) {
     return;
 }
 
+void test(){
+    *(volatile int*)LED_ADDR = 0xFFFFFFFF;
+}
+
+void delay() {
+    *(volatile int*)LED_ADDR = 0xEEEEEEEE;
+    test();
+    *(volatile int*)LED_ADDR = 0xDDDDDDDD;
+}
+
 int main() {
-    transmit_uart('H');
-    transmit_uart('e');
-    transmit_uart('l');
-    transmit_uart('l');
-    transmit_uart('o');
-    transmit_uart(' ');
-    transmit_uart('W');
-    transmit_uart('o');
-    transmit_uart('r');
-    transmit_uart('l');
-    transmit_uart('d');
-    transmit_uart('\n');
+    *(volatile int*)LED_ADDR = 0xAAAAAAAA;
+    test();
+    *(volatile int*)LED_ADDR = 0xBBBBBBBB;
+    delay();
+    test();
+    *(volatile int*)LED_ADDR = 0xCCCCCCCC;
+    delay();
+    //transmit_uart('H');
+    //transmit_uart('e');
+    //transmit_uart('l');
+    //transmit_uart('l');
+    //transmit_uart('o');
+    //transmit_uart(' ');
+    //transmit_uart('W');
+    //transmit_uart('o');
+    //transmit_uart('r');
+    //transmit_uart('l');
+    //transmit_uart('d');
+    //transmit_uart('\n');
     //*(volatile char *)0xFFFFFFF0 = 0xAA;
     //*(volatile char *)0xFFFFFFF1 = 0xBB;
     //*(volatile char *)0xFFFFFFF2 = 0xCC;

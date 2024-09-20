@@ -31,6 +31,44 @@ transmit_uart:
 	jr	ra
 	.size	transmit_uart, .-transmit_uart
 	.align	2
+	.globl	test
+	.type	test, @function
+test:
+	addi	sp,sp,-16
+	sw	s0,12(sp)
+	addi	s0,sp,16
+	li	a5,-16
+	li	a4,-1
+	sw	a4,0(a5)
+	nop
+	lw	s0,12(sp)
+	addi	sp,sp,16
+	jr	ra
+	.size	test, .-test
+	.align	2
+	.globl	delay
+	.type	delay, @function
+delay:
+	addi	sp,sp,-16
+	sw	ra,12(sp)
+	sw	s0,8(sp)
+	addi	s0,sp,16
+	li	a5,-16
+	li	a4,-286330880
+	addi	a4,a4,-274
+	sw	a4,0(a5)
+	call	test
+	li	a5,-16
+	li	a4,-572661760
+	addi	a4,a4,-547
+	sw	a4,0(a5)
+	nop
+	lw	ra,12(sp)
+	lw	s0,8(sp)
+	addi	sp,sp,16
+	jr	ra
+	.size	delay, .-delay
+	.align	2
 	.globl	main
 	.type	main, @function
 main:
@@ -38,30 +76,22 @@ main:
 	sw	ra,12(sp)
 	sw	s0,8(sp)
 	addi	s0,sp,16
-	li	a0,72
-	call	transmit_uart
-	li	a0,101
-	call	transmit_uart
-	li	a0,108
-	call	transmit_uart
-	li	a0,108
-	call	transmit_uart
-	li	a0,111
-	call	transmit_uart
-	li	a0,32
-	call	transmit_uart
-	li	a0,87
-	call	transmit_uart
-	li	a0,111
-	call	transmit_uart
-	li	a0,114
-	call	transmit_uart
-	li	a0,108
-	call	transmit_uart
-	li	a0,100
-	call	transmit_uart
-	li	a0,10
-	call	transmit_uart
+	li	a5,-16
+	li	a4,-1431654400
+	addi	a4,a4,-1366
+	sw	a4,0(a5)
+	call	test
+	li	a5,-16
+	li	a4,-1145323520
+	addi	a4,a4,-1093
+	sw	a4,0(a5)
+	call	delay
+	call	test
+	li	a5,-16
+	li	a4,-858992640
+	addi	a4,a4,-820
+	sw	a4,0(a5)
+	call	delay
 	li	a5,0
 	mv	a0,a5
 	lw	ra,12(sp)

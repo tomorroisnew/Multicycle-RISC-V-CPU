@@ -21,12 +21,12 @@ module test_SOC;
         $dumpvars(1, test_SOC.bram_mmio.ram1[102]);
         $dumpvars(1, test_SOC.bram_mmio.ram2[103]);
         $dumpvars(1, test_SOC.bram_mmio.ram3[104]);
-        $dumpvars(1, test_SOC.cpu.RegFile[1]);
-        $dumpvars(1, test_SOC.cpu.RegFile[2]);
-        $dumpvars(1, test_SOC.cpu.RegFile[5]);
-        $dumpvars(1, test_SOC.cpu.RegFile[11]);
-        $dumpvars(1, test_SOC.cpu.RegFile[14]);
-        $dumpvars(1, test_SOC.cpu.RegFile[15]);
+        //$dumpvars(1, test_SOC.cpu.RegFile[1]);
+        //$dumpvars(1, test_SOC.cpu.RegFile[2]);
+        //$dumpvars(1, test_SOC.cpu.RegFile[5]);
+        //$dumpvars(1, test_SOC.cpu.RegFile[11]);
+        //$dumpvars(1, test_SOC.cpu.RegFile[14]);
+        //$dumpvars(1, test_SOC.cpu.RegFile[15]);
     end
 
     // BUS
@@ -38,7 +38,7 @@ module test_SOC;
     // Clock generation
     initial begin
         clk = 0;
-        repeat (600000) begin
+        repeat (5000) begin //600000
             #5 clk = ~clk;  // Generate clock signal with period 10 time units
         end
     end
