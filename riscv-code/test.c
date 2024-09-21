@@ -1,30 +1,54 @@
 #define LED_ADDR 0xFFFFFFF0  // Define a memory-mapped I/O address
 
-void transmit_uart(char c) {
-    while (*(volatile char *)0xFFFFFFF7 != 0x00){}; // Wait for the status register to be 0x00 which indicate idle
-    *(volatile char *)0xFFFFFFF5 = c; //data
-    *(volatile char *)0xFFFFFFF4 = 0xFF; //control
-    return;
-}
+//void transmit_uart(char c) {
+//    while (*(volatile char *)0xFFFFFFF7 != 0x00){}; // Wait for the status register to be 0x00 which indicate idle
+//    *(volatile char *)0xFFFFFFF5 = c; //data
+//    *(volatile char *)0xFFFFFFF4 = 0xFF; //control
+//    return;
+//}
+//
+//void transmit_uart_str(char *str) {
+//    while (*str != '\0') {
+//        transmit_uart(*str);
+//        str++;
+//    }
+//    return;
+//}
 
-void test(){
-    *(volatile int*)LED_ADDR = 0xFFFFFFFF;
-}
-
-void delay() {
-    *(volatile int*)LED_ADDR = 0xEEEEEEEE;
-    test();
-    *(volatile int*)LED_ADDR = 0xDDDDDDDD;
+//void test(){
+//    *(volatile int*)LED_ADDR = 0xFFFFFFFF;
+//}
+//
+void delay(int count) {
+    for (int i = 0; i < count; i++) {
+        asm("nop");
+    }
 }
 
 int main() {
-    *(volatile int*)LED_ADDR = 0xAAAAAAAA;
-    test();
-    *(volatile int*)LED_ADDR = 0xBBBBBBBB;
-    delay();
-    test();
-    *(volatile int*)LED_ADDR = 0xCCCCCCCC;
-    delay();
+    while (1)
+    {
+        *(volatile int*)LED_ADDR = 0x00000000;
+        //delay(5);
+        //for (int i = 0; i < 2000000000; i++) {delay(2000000000);
+        delay(20000);
+        //delay(2000000000);
+        //delay(2000000000);}
+        *(volatile int*)LED_ADDR = 0xFFFFFFFF;
+        delay(20000);
+        //delay(5);
+        //for (int i = 0; i < 2000000000; i++) {delay(2000000000);
+        //delay(2000000000);
+        //delay(2000000000);
+        //delay(2000000000);}
+    }
+    //test();
+    //*(volatile int*)LED_ADDR = 0xBBBBBBBB;
+    //delay();
+    //test();
+    //*(volatile int*)LED_ADDR = 0xCCCCCCCC;
+    //delay();
+    //transmit_uart_str("Hi World\n\r");
     //transmit_uart('H');
     //transmit_uart('e');
     //transmit_uart('l');

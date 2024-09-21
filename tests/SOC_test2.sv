@@ -70,7 +70,7 @@ module test_SOC;
     // Monitor outputs
     initial begin
         //$monitor("At time %t, reset = %0b, ledr_n = %0b, ledg_n = %0b", $time, reset, ledr_n, ledg_n);
-        $monitor("At time %t, reset = %0b", $time, reset);
+        $monitor("At time %t, reset = %0b, instr_reg = %h", $time, reset, cpu.InstructionRegister);
     end
 
     // Waveform dump

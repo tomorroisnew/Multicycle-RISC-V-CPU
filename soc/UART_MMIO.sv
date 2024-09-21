@@ -84,8 +84,8 @@ module UART_MMIO #(
 
     // Instantiate baud rate generator with corrected parameters
     baud_rate_generator #(
-        .SYS_CLK_FREQ(6000000), // For simulation: 10 Hz system clock
-        .BAUD_RATE(1200)     // For simulation: 10 baud rate
+        .SYS_CLK_FREQ(9000000), // For simulation: 10 Hz system clock
+        .BAUD_RATE(115200)     // For simulation: 10 baud rate
     ) baud_gen (
         .clk(clk),         // Connect to the system clock
         .reset(reset),
@@ -185,7 +185,7 @@ module UART_MMIO #(
 endmodule
 
 module baud_rate_divider #(
-    parameter SYSTEM_CLOCK_FREQ = 6000000,    // System clock frequency: 6 MHz
+    parameter SYSTEM_CLOCK_FREQ = 9000000,    // System clock frequency: 6 MHz
     parameter BAUD_RATE = 1200                // Updated baud rate to 1200
 )(
     input wire clk,        // System clock
@@ -214,8 +214,8 @@ endmodule
 
 // Corrected baud_rate_generator Module
 module baud_rate_generator #(
-    parameter SYS_CLK_FREQ = 6000000, // System clock frequency in Hz (for simulation)
-    parameter BAUD_RATE    = 1200  // Desired baud rate (for simulation)
+    parameter SYS_CLK_FREQ = 9000000, // System clock frequency in Hz (for simulation)
+    parameter BAUD_RATE    = 115200  // Desired baud rate (for simulation)
 )(
     input wire clk,            // System clock input
     input wire reset,          // Asynchronous reset

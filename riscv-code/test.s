@@ -9,41 +9,42 @@ _start:
     nop                             # No-op (optional)
 1:  j 1b
 
-transmit(char):
-        addi    sp, sp, -16
-        sw      ra, 12(sp)
-        sw      s0, 8(sp)
-        addi    s0, sp, 16
-        sb      a0, -9(s0)
-        j       .LBB0_1
-.LBB0_1:
-        lbu     a0, -9(zero)
-        beqz    a0, .LBB0_3
-        j       .LBB0_2
-.LBB0_2:
-        j       .LBB0_1
-.LBB0_3:
-        lbu     a0, -9(s0)
-        sb      a0, -11(zero)
-        li      a0, 255
-        sb      a0, -12(zero)
-        lw      ra, 12(sp)
-        lw      s0, 8(sp)
-        addi    sp, sp, 16
-        ret
-
+delay:
+        addi    sp,sp,-48
+        sw      ra,44(sp)
+        sw      s0,40(sp)
+        addi    s0,sp,48
+        sw      a0,-36(s0)
+        sw      zero,-20(s0)
+        j       .L2
+.L3:
+        nop
+        lw      a5,-20(s0)
+        addi    a5,a5,1
+        sw      a5,-20(s0)
+.L2:
+        lw      a4,-20(s0)
+        lw      a5,-36(s0)
+        blt     a4,a5,.L3
+        nop
+        nop
+        lw      ra,44(sp)
+        lw      s0,40(sp)
+        addi    sp,sp,48
+        jr      ra
 main:
-        addi    sp, sp, -16
-        sw      ra, 12(sp)
-        sw      s0, 8(sp)
-        addi    s0, sp, 16
-        li      a0, 0
-        sw      a0, -16(s0)
-        sw      a0, -12(s0)
-        li      a0, 65
-        call    transmit(char)
-        lw      a0, -16(s0)
-        lw      ra, 12(sp)
-        lw      s0, 8(sp)
-        addi    sp, sp, 16
-        ret
+        addi    sp,sp,-16
+        sw      ra,12(sp)
+        sw      s0,8(sp)
+        addi    s0,sp,16
+.L5:
+        li      a5,-16
+        sw      zero,0(a5)
+        li      a0,1
+        call    delay
+        li      a5,-16
+        li      a4,-1
+        sw      a4,0(a5)
+        li      a0,1
+        call    delay
+        j       .L5

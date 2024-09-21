@@ -168,10 +168,11 @@ module ControlUnit (
             end
             // JAL
             JAL_EXECUTION: begin
+                // This is useless, pc + 4 is already calculated in decode, but im afraid to make changes. Also, just to make it match with JALR, lets keep this state
                 PCEnable = 1'b1;                    // Update PC
                 ALUSrcA = 2'b01;                    // OLD PC
                 ALUSrcB = 2'b01;                    // Immediate
-                ResultSrc = 2'b10;                  // ALU Result
+                ResultSrc = 2'b00;                  // ALUOUT
             end
             JAL_EXECUTION2: begin
                 // Now the calculated PC + 4 which we store in rd but let the ALU writeout do the writing to reg. Just compute to be stored in ALUOUT

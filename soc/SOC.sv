@@ -13,18 +13,34 @@ module SOC (
     logic [3:0] byteMask;
     logic memWrite;
 
-    logic clk, slowed_clk;
+    logic clk, clk_12mhz;
     logic resetn;
     logic start_toggle;
     logic start_prev;
 
-    // Clock generation
+        // Clock generation
     SB_HFOSC OSC (
         .CLKHFPU(1'b1),
         .CLKHFEN(1'b1),
-        .CLKHF(clk)
+        .CLKHF(clk_12mhz)
     );
-    defparam OSC.CLKHF_DIV = "0b11";
+    defparam OSC.CLKHF_DIV = "0b10";
+
+    //logic clk_11mhz;
+
+    // Instantiate the PLL to generate an 9.00 MHz clock from the 12 MHz input
+    SB_PLL40_CORE pll_inst (
+        .REFERENCECLK(clk_12mhz),  // Connect the 12 MHz HFOSC output
+        .PLLOUTGLOBAL(clk),        // Output the 11 MHz clock
+        .RESETB(1'b1),             // Active low reset for the PLL
+        .BYPASS(1'b0)              // Do not bypass the PLL
+    );
+
+    // PLL Parameters
+    defparam pll_inst.DIVR = 4'b0000;         // Reference divider: Divide by 1
+    defparam pll_inst.DIVF = 7'b0101111;      // Feedback divider: Multiply by 48 (updated to 47)
+    defparam pll_inst.DIVQ = 3'b110;          // Output divider: Divide by 32
+    defparam pll_inst.FILTER_RANGE = 3'b001;  // PLL filter range
 
     //Clockworks #(
     //    .SLOW(10) // Divide clock frequency by 2^10

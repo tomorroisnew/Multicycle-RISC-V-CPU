@@ -14,4 +14,4 @@ _start:
 # Declare the top of the stack
 .section .bss
 .globl _stack_top
-_stack_top = 0x00000800   # Set this to the top of your available memory
+_stack_top = 0x00000600   # Set this to the top of your available memory
