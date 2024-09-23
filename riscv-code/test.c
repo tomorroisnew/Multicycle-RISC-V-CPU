@@ -31,11 +31,11 @@ int main() {
         *(volatile int*)LED_ADDR = 0x00000000;
         //delay(5);
         //for (int i = 0; i < 2000000000; i++) {delay(2000000000);
-        delay(20000);
+        delay(2);
         //delay(2000000000);
         //delay(2000000000);}
         *(volatile int*)LED_ADDR = 0xFFFFFFFF;
-        delay(20000);
+        delay(2);
         //delay(5);
         //for (int i = 0; i < 2000000000; i++) {delay(2000000000);
         //delay(2000000000);

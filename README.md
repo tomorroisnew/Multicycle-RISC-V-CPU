@@ -39,35 +39,24 @@ The control unit of the multi-cycle CPU is implemented as a finite state machine
 The state machine includes the following states:
 
 - **FETCH**: Fetch the instruction from memory.
+- **MEMORY_FETCH_WAIT**: Wait for the memory fetch operation to complete.
+- **DECODER_WAIT**: Add a delay for fetching the registers.
 - **DECODE**: Decode the fetched instruction and determine the next state based on the opcode.
 - **RTYPE_EXECUTION**: Execute R-type instructions.
 - **ALU_WRITEBACK**: Write the result of ALU operations back to the register file.
-- **JAL_EXECUTION**: Execute JAL (Jump and Link) instructions.
+- **JAL_EXECUTION**: Execute the first part of JAL (Jump and Link) instructions.
+- **JAL_EXECUTION2**: Execute the second part of JAL instructions.
 - **JALR_EXECUTION**: Execute the first part of JALR (Jump and Link Register) instructions.
 - **JALR_EXECUTION2**: Execute the second part of JALR instructions.
 - **BRANCH_COMPLETION**: Complete branch instructions based on the condition.
 - **MEMORY_ADDRESS_COMPUTATION**: Compute the memory address for load/store instructions.
 - **LW_MEMORY_ACCESS**: Access memory for load word (LW) instructions.
+- **MEMORY_LW_WAIT**: Wait for the load word (LW) memory operation to complete.
 - **LW_WRITEBACK**: Write the loaded word back to the register file.
 - **SW_MEMORY_ACCESS**: Access memory for store word (SW) instructions.
 - **IMMEDIATE_EXECUTION**: Execute immediate-type instructions.
 - **LUI_WRITEBACK**: Write the result of LUI (Load Upper Immediate) instructions to the register file.
 - **AUIPC_EXECUTE**: Execute AUIPC (Add Upper Immediate to PC) instructions.
-- **MEMORY_WAIT**: Wait for memory operations to complete.
-
-### State Transitions
-
-The state transitions are determined by the current state and the opcode of the instruction. For example:
-
-- From **FETCH** to **MEMORY_WAIT** to fetch the next instruction.
-- From **DECODE** to the appropriate execution state based on the opcode.
-- From **RTYPE_EXECUTION** to **ALU_WRITEBACK** to write the result of R-type instructions.
-- From **MEMORY_ADDRESS_COMPUTATION** to **LW_MEMORY_ACCESS** or **SW_MEMORY_ACCESS** based on the opcode.
-
-
-## Datapath
-
-The datapath of the multi-cycle CPU is responsible for executing the instructions as directed by the control unit. It consists of various components such as registers, ALU (Arithmetic Logic Unit), multiplexers, and memory. The control unit sends control signals to the datapath to dictate the operations performed during each clock cycle.
 
 ### Control Signals
 
@@ -123,3 +112,14 @@ By leveraging these operations, the ALU plays a pivotal role in executing instru
 ## Credits
 
 This project uses code from the Yosys Open SYnthesis Suite. Yosys is an open-source framework for Verilog RTL synthesis. The code included in `cells_sim.v` is derived from Yosys to facilitate simulation and synthesis processes.
+
+## TODO
+- Implement PLIC (Platform-Level Interrupt Controller)
+    - Add PLIC gateway module for each type of signal:
+        - Level sensitive
+        - Edge sensitive
+- Add the ISA M extension (Multiplication and Division)
+- Implement CSRs (Control and Status Registers)
+- Add the ISA A extension (Atomic Instructions)
+- Implement VGA I/O
+- Implement QSPI for the flash memory
