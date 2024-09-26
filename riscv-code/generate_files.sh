@@ -1,10 +1,10 @@
-riscv32-unknown-elf-as -march=rv32i -o startup.o startup.s
-riscv32-unknown-elf-gcc -O0 -march=rv32i -mabi=ilp32 -mstrict-align -nostartfiles -nostdlib -T test.ld -save-temps -o test.elf startup.o test.c
-riscv32-unknown-elf-objcopy -O binary test.elf test.bin
-
-#riscv32-unknown-elf-as -march=rv32i -o test.o test.s
-#riscv32-unknown-elf-ld -T test.ld -o test.elf test.o
+#riscv32-unknown-elf-as -march=rv32i -o startup.o startup.s
+#riscv32-unknown-elf-gcc -O0 -march=rv32i -mabi=ilp32 -mstrict-align -nostartfiles -nostdlib -T test.ld -save-temps -o test.elf startup.o test.c
 #riscv32-unknown-elf-objcopy -O binary test.elf test.bin
+
+riscv32-unknown-elf-as -march=rv32i_zicsr -o test.o test.s
+riscv32-unknown-elf-ld -T test.ld -o test.elf test.o
+riscv32-unknown-elf-objcopy -O binary test.elf test.bin
 
 xxd -p -c 4 test.bin > test.hex
 

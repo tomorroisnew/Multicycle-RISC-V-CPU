@@ -13,10 +13,14 @@ module ControlUnit (
     output logic [1:0] ALUSrcA, ALUSrcB, 
     output logic [3:0] ALUControlSignal,
     // Memory
-    output logic [1:0] ResultSrc,
+    output logic [2:0] ResultSrc,
     output logic MemWrite,
     // WriteBack
-    output logic RegWrite
+    output logic RegWrite,
+    // CSR
+    output logic csrWriteEnable,
+    output logic csrOutEnable,
+    output logic [1:0] csrSrc
 );
     // ALUOp Wire. For the ALUControl 
     logic [1:0] ALUOp;
@@ -58,7 +62,13 @@ module ControlUnit (
         // SW/LW
         MEMORY_LW_WAIT = 5'b10000,
         // Decoder Wait
-        DECODER_WAIT = 5'b10010
+        DECODER_WAIT = 5'b10010,
+        // Initial Read the original csr
+        CSR_READ_CSRREGISTER = 5'b10011,
+        // Write original csr to register
+        CSR_WRITE_REGISTER = 5'b10100,
+        // Update CSR Register
+        CSR_WRITE_CSRREGISTER = 5'b10101
     } state_t;
 
     state_t current_state, next_state;
@@ -89,6 +99,7 @@ module ControlUnit (
                     7'b0010011:             next_state = IMMEDIATE_EXECUTION;
                     7'b0110111:             next_state = LUI_WRITEBACK;
                     7'b0010111:             next_state = AUIPC_EXECUTE;	
+                    7'b1110011:             next_state = CSR_READ_CSRREGISTER;
                     default:                next_state = FETCH;
                 endcase
             end
@@ -120,6 +131,10 @@ module ControlUnit (
             LUI_WRITEBACK:                  next_state = FETCH;
             // AUIPC
             AUIPC_EXECUTE:                  next_state = ALU_WRITEBACK;
+            // CSR
+            CSR_READ_CSRREGISTER:           next_state = CSR_WRITE_REGISTER;
+            CSR_WRITE_REGISTER:             next_state = CSR_WRITE_CSRREGISTER;
+            CSR_WRITE_CSRREGISTER:          next_state = FETCH;
             default:    next_state = FETCH;
         endcase
     end
@@ -135,17 +150,20 @@ module ControlUnit (
         REGBEnable = 1'b0;                  // Update Register B
         ALUSrcA = 2'b00;                    // ALU Source A MUX
         ALUSrcB = 2'b00;                    // ALU Source B MUX
-        ResultSrc = 2'b00;                  // Result Source MUX
+        ResultSrc = 3'b000;                  // Result Source MUX
         MemWrite = 1'b0;                    // Memory Write
         RegWrite = 1'b0;                    // Register File Write
         ALUOp = 2'b00;                      // ALU Operation
         OLDPCEnable = 1'b0;
+        csrWriteEnable = 1'b0;
+        csrOutEnable = 1'b0;
+        csrSrc = 2'b00;
 
         case (current_state)
             FETCH: begin
                 // Update PC to point to the next address. PC + 4 by default
                 // We can rewrite this later to just skip the fetch, and go to decode MEM_WAIT immediately when jumped
-                ResultSrc = 2'b10;                  // ALURESULT which is PC + 4 Can remove this since its default
+                ResultSrc = 3'b010;                  // ALURESULT which is PC + 4 Can remove this since its default
                 ALUSrcB = 2'b10;                       // Constant 4 for updating pc
             end
             DECODE: begin
@@ -164,7 +182,7 @@ module ControlUnit (
             ALU_WRITEBACK: begin
                 // Write to register
                 RegWrite = 1'b1;                    // Write to register
-                ResultSrc = 2'b00;                  // ALUOUT. Can be removed since its default
+                ResultSrc = 3'b000;                  // ALUOUT. Can be removed since its default
             end
             // JAL
             JAL_EXECUTION: begin
@@ -172,7 +190,7 @@ module ControlUnit (
                 PCEnable = 1'b1;                    // Update PC
                 ALUSrcA = 2'b01;                    // OLD PC
                 ALUSrcB = 2'b01;                    // Immediate
-                ResultSrc = 2'b00;                  // ALUOUT
+                ResultSrc = 3'b000;                  // ALUOUT
             end
             JAL_EXECUTION2: begin
                 // Now the calculated PC + 4 which we store in rd but let the ALU writeout do the writing to reg. Just compute to be stored in ALUOUT
@@ -186,7 +204,7 @@ module ControlUnit (
                 PCEnable = 1'b1;                    // Update PC
                 ALUSrcA = 2'b10;                    // REGA
                 ALUSrcB = 2'b01;                    // Immediate
-                ResultSrc = 2'b10;                  // ALURESULT
+                ResultSrc = 3'b010;                  // ALURESULT
             end
             JALR_EXECUTION2: begin
                 // Now the calculated PC + 4 which we store in rd but let the ALU writeout do the writing to reg. Just compute to be stored in ALUOUT
@@ -219,7 +237,7 @@ module ControlUnit (
                 InstructionOrData = 1'b1;           // Data
             end
             LW_WRITEBACK: begin
-                ResultSrc = 2'b01;                  // Data From MemoryRegister
+                ResultSrc = 3'b001;                  // Data From MemoryRegister
                 RegWrite = 1'b1;
             end
             SW_MEMORY_ACCESS: begin
@@ -235,7 +253,7 @@ module ControlUnit (
             // LUI
             LUI_WRITEBACK: begin
                 RegWrite = 1'b1;                    // Write to register
-                ResultSrc = 2'b11;                  // Immediate
+                ResultSrc = 3'b011;                  // Immediate
                 ImmediateSrc = 3'b011;              // U-Type
             end
             // AUIPC
@@ -256,6 +274,26 @@ module ControlUnit (
             MEMORY_LW_WAIT: begin
                 // LW
                 InstructionOrData = 1'b1;           
+            end
+            // CSR Initial read the original csr
+            CSR_READ_CSRREGISTER: begin
+                csrOutEnable = 1'b1;
+            end
+            // Write original csr to register
+            CSR_WRITE_REGISTER: begin
+                RegWrite = 1'b1;
+                ResultSrc = 3'b100; // csrOut
+            end
+            // CSR Write to CSR Register
+            CSR_WRITE_CSRREGISTER: begin
+                csrWriteEnable = 1'b1;
+                case (funct3)
+                    3'b001: csrSrc = 2'b00; // From RegA
+                    3'b010: csrSrc = 2'b01; // csrOut | REGA;
+                    3'b011: csrSrc = 2'b10; // csrOut & REGA;
+                    default: csrSrc = 2'b00; // From RegA
+                endcase
+                //csrSrc = 2'b00; // From RegA
             end
         endcase
     end

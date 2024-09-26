@@ -157,7 +157,11 @@ module CPU (
         .ResultSrc(ResultSrc),
         .MemWrite(MemWrite),
         // WriteBack
-        .RegWrite(RegWrite)
+        .RegWrite(RegWrite),
+        // CSR
+        .csrWriteEnable(csrWriteEnable),
+        .csrOutEnable(csrOutEnable),
+        .csrSrc(csrSrc)
     );
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -221,7 +225,7 @@ module CPU (
     //////////////////////////////////////////////////////////// Memory //////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Combinational Wires for signals. 
-    logic [1:0] ResultSrc;
+    logic [2:0] ResultSrc;
     logic MemWrite; // Can be refactored, naming can be a porblem
     //logic InstructionOrData; // Already in the fetch, but also used here. 
 
@@ -248,10 +252,11 @@ module CPU (
     // Result Multiplexer
     always_comb begin
         case (ResultSrc)
-            2'b00: Result = ALUOUT;
-            2'b01: Result = MemoryDataRegister;
-            2'b10: Result = ALUResult;
-            2'b11: Result = Immediate; // For lui
+            3'b000: Result = ALUOUT;
+            3'b001: Result = MemoryDataRegister;
+            3'b010: Result = ALUResult;
+            3'b011: Result = Immediate; // For lui
+            3'b100: Result = csrOut;    
             default: begin
                 Result = ALUOUT;
             end
@@ -382,6 +387,84 @@ module CPU (
     //        end
     //    end
     //end
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////// CSR //////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    logic [31:0] mstatus;   // 0x300 MRW
+    logic [31:0] mip;       // 0x344 MRW
+    logic [31:0] mie;       // 0x304 MRW
+    logic [31:0] mtvec;     // 0x305 MRW
+    logic [31:0] mepc;      // 0x341 MRW
+    logic [31:0] mcause;    // 0x342 MRW
+
+    // Extract parts of csr instructions
+    logic [11:0] csrAddress;
+    logic [31:0] csrReadData, csrWriteData;
+    logic csrWriteEnable;
+    logic [31:0] csrOut; // Register to hold the output of the csr
+    logic csrOutEnable; // Enable the output of the csr
+
+    assign csrAddress = InstructionRegister[31:20];
+
+    // CSR read logic
+    always_comb begin
+        case (csrAddress)
+            12'h300: csrReadData = mstatus;
+            12'h344: csrReadData = mip;
+            12'h304: csrReadData = mie;
+            12'h305: csrReadData = mtvec;
+            12'h341: csrReadData = mepc;
+            12'h342: csrReadData = mcause;
+            default: csrReadData = 32'b0;
+        endcase
+    end
+
+    // CSR read to csrOut logic
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            csrOut <= 32'b0;
+        end else begin
+            if (csrOutEnable) begin
+                csrOut <= csrReadData;
+            end
+        end
+    end
+
+    // CSR write logic
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            mstatus <= 32'b0;
+            mip <= 32'b0;
+            mie <= 32'b0;
+            mtvec <= 32'b0;
+            mepc <= 32'b0;
+            mcause <= 32'b0;
+        end else if (csrWriteEnable) begin
+            case (csrAddress)
+                12'h300: mstatus <= csrWriteData;
+                12'h344: mip <= csrWriteData;
+                12'h304: mie <= csrWriteData;
+                12'h305: mtvec <= csrWriteData;
+                12'h341: mepc <= csrWriteData;
+                12'h342: mcause <= csrWriteData;
+                default: ; // Do nothing for invalid addresses
+            endcase
+        end
+    end
+
+    // CSR write data selection
+    logic [1:0] csrSrc;
+    always_comb begin
+        case (csrSrc)
+            2'b00: csrWriteData = REGA; // CSRRW
+            2'b01: csrWriteData = csrOut | REGA; // CSRRS
+            2'b10: csrWriteData = csrOut & ~REGA; // CSRRS
+            //2'b10: csrWriteData = REGA | csrReadData; // CSRRS
+            //2'b11: csrWriteData = ~REGA & csrReadData; // CSRRC
+            default: csrWriteData = 32'b0;
+        endcase
+    end
 
 endmodule
 
